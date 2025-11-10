@@ -1,0 +1,3 @@
+/Users/fayeyu/CLionProjects/raytracing/build/CMakeFiles/raytracing.dir
+/Users/fayeyu/CLionProjects/raytracing/build/CMakeFiles/edit_cache.dir
+/Users/fayeyu/CLionProjects/raytracing/build/CMakeFiles/rebuild_cache.dir
