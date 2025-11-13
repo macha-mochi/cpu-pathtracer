@@ -11,12 +11,12 @@
 class bvh_node : public hittable
 {
     public:
-    bvh_node(hittable_list list) : bvh_node(list.objects, 0, static_cast<long>(list.objects.size())){}
-    bvh_node(std::vector<shared_ptr<hittable>>& objects, long start, long end)
+    bvh_node(hittable_list list) : bvh_node(list.objects, 0, list.objects.size()){}
+    bvh_node(std::vector<shared_ptr<hittable>>& objects, size_t start, size_t end)
     {
         //Build the bounding box of the span of source objects
         bbox = aabb::empty;
-        for (long object_index=start; object_index<end; object_index++)
+        for (size_t object_index = start; object_index<end; object_index++)
         {
             bbox = aabb(bbox, objects[object_index]->bounding_box());
         }
@@ -32,7 +32,7 @@ class bvh_node : public hittable
         if (object_span == 3)
         {
             //TODO is this expensive?? idk ask ai
-            std::sort(std::begin(objects) + start, std::begin(objects) + end, comparator);
+            std::sort(std::begin(objects) + static_cast<long>(start), std::begin(objects) + static_cast<long>(end), comparator);
             left = make_shared<bvh_node>(objects, start, start+2);
             right = objects[end-1]; //is a primitive
         }else if (object_span == 2)
@@ -48,23 +48,23 @@ class bvh_node : public hittable
 
             //Split the list: if the size of list is < 12, split into that number of buckets
             //Otherwise split into 12 buckets
-            int num_buckets = end-start < 12 ? static_cast<int>(end - start) : 12;
-            int optimal_partition = sah_partition(objects, start, end, axis, num_buckets, (double)bbox.axis_interval(axis).size() / num_buckets);
-            left = make_shared<bvh_node>(objects, start, start+optimal_partition+1);
-            right = make_shared<bvh_node>(objects, start+optimal_partition+1, end);
+            int num_buckets = (object_span) < 12 ? static_cast<int>(object_span) : 12;
+            size_t optimal_partition = sah_partition(objects, start, end, axis, num_buckets, bbox.axis_interval(axis).size() / num_buckets);
+            left = make_shared<bvh_node>(objects, start, optimal_partition+1);
+            right = make_shared<bvh_node>(objects, optimal_partition+1, end);
         }
     }
-    int sah_partition(std::vector<shared_ptr<hittable>>& objects, size_t start, size_t end, int axis, int num_buckets, double bucket_length) const
+    size_t sah_partition(const std::vector<shared_ptr<hittable>>& objects, size_t start, size_t end, int axis, int num_buckets, double bucket_length) const
     {
-        int best_index = 0;
-        int current_index = 0;
+        size_t best_index = start;
+        size_t current_index = start;
         aabb left = objects[current_index]->bounding_box();
         double min_sa = infinity;
         for (int i = 1; i <= num_buckets; i++) //for loop through each bucket
         {
             double bound = bucket_length*i;
             //loop through bounding boxes, adding them to left box until we'd go into another bucket
-            while (objects[current_index]->bounding_box().get_centroid()[axis] <= bound && current_index < end)
+            while (current_index < end && objects[current_index]->bounding_box().get_centroid()[axis] <= bound)
             {
                 left = aabb(left, objects[current_index]->bounding_box());
                 current_index++;
@@ -76,14 +76,14 @@ class bvh_node : public hittable
 
             aabb right = aabb::empty;
             //calc the right box TODO ask ai if computationally expensive??
-            for (int j = current_index+1; j < end; j++)
+            for (size_t j = current_index+1; j < end; j++)
             {
                 right = aabb(right, objects[j]->bounding_box());
             }
             double right_sa = right.surface_area();
             if (left_sa + right_sa < min_sa) //at the end of loop: the partition w the minimum SA is what we choose
             {
-                best_index = current_index == 0 ? 0 : current_index-1;
+                best_index = current_index == start ? start : current_index-1;
                 min_sa = left_sa + right_sa;
             }
         }

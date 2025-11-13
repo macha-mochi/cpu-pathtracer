@@ -70,7 +70,7 @@ int main() {
     //World
     hittable_list world;
 
-    make_small_test_scene(world);
+    make_scene(world);
     world = hittable_list(make_shared<bvh_node>(world));
 
     camera cam;
