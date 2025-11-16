@@ -15,4 +15,6 @@ add_executable(raytracing main.cpp
         camera.h
         material.h
         aabb.h
-        bvh_node.h)
+        bvh_node.h
+        quad.h
+        mesh.h)

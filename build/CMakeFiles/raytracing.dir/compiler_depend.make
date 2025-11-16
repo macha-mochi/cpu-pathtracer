@@ -971,6 +971,7 @@ CMakeFiles/raytracing.dir/main.cpp.o: /Users/fayeyu/CLionProjects/raytracing/mai
   /Users/fayeyu/CLionProjects/raytracing/hittable_list.h \
   /Users/fayeyu/CLionProjects/raytracing/interval.h \
   /Users/fayeyu/CLionProjects/raytracing/material.h \
+  /Users/fayeyu/CLionProjects/raytracing/quad.h \
   /Users/fayeyu/CLionProjects/raytracing/ray.h \
   /Users/fayeyu/CLionProjects/raytracing/rtweekend.h \
   /Users/fayeyu/CLionProjects/raytracing/sphere.h \
@@ -980,6 +981,8 @@ CMakeFiles/raytracing.dir/main.cpp.o: /Users/fayeyu/CLionProjects/raytracing/mai
 /Users/fayeyu/CLionProjects/raytracing/sphere.h:
 
 /Users/fayeyu/CLionProjects/raytracing/rtweekend.h:
+
+/Users/fayeyu/CLionProjects/raytracing/quad.h:
 
 /Users/fayeyu/CLionProjects/raytracing/material.h:
 

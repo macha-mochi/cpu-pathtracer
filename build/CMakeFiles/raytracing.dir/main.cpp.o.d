@@ -972,4 +972,5 @@ CMakeFiles/raytracing.dir/main.cpp.o: \
   /Users/fayeyu/CLionProjects/raytracing/hittable.h \
   /Users/fayeyu/CLionProjects/raytracing/camera.h \
   /Users/fayeyu/CLionProjects/raytracing/material.h \
-  /Users/fayeyu/CLionProjects/raytracing/sphere.h
+  /Users/fayeyu/CLionProjects/raytracing/sphere.h \
+  /Users/fayeyu/CLionProjects/raytracing/quad.h
