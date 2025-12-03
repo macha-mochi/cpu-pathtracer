@@ -4,6 +4,7 @@
 #include "bvh_node.h"
 #include "camera.h"
 #include "hittable_list.h"
+#include "obj_loader.h"
 #include "sphere.h"
 #include "quad.h"
 
@@ -142,17 +143,82 @@ void quads()
     cam.defocus_angle = 0;
 
     cam.render(world);
+}
+void load_obj()
+{
+    hittable_list world;
 
+    obj_loader loader = obj_loader("/Users/fayeyu/CLionProjects/raytracing/objs");
+    /*auto mat = make_shared<lambertian>(color(1.0, 0.0, 0.0));
+    world.add(make_shared<sphere>(point3(0, 2, 0), 1, mat));*/
+
+    auto mat1 = make_shared<lambertian>(color(1.0, 0.2, 0.5));
+    shared_ptr<triangle_mesh> mesh1 = loader.load("cube_and_sphere.obj", mat1);
+
+    world.add(mesh1);
+    std::clog<< world.objects.size() << std::endl;
+
+    aabb bb = mesh1->bounding_box();
+    std::clog << bb.x.min << " " << bb.x.max << std::endl;
+    std::clog << bb.y.min << " " << bb.y.max << std::endl;
+    std::clog << bb.z.min << " " << bb.z.max << std::endl;
+
+    /*hittable_list tris = mesh1->triangles;
+    world.add(make_shared<bvh_node>(tris));
+    std::clog << "made bvh" << std::endl;*/
+
+    camera cam;
+
+    cam.aspect_ratio      = 16.0 / 9.0;
+    cam.image_width       = 400;
+    cam.samples_per_pixel = 10;
+    cam.max_depth         = 30;
+
+    cam.vfov     = 90;
+    cam.lookfrom = point3(-2,2,2);
+    cam.lookat   = point3(0,0,0);
+    cam.vup      = vec3(0,1,0);
+
+    cam.defocus_angle = 0.0;
+    cam.focus_dist    = 3;
+
+    cam.render(world);
+}
+void triangle_test(){
+    hittable_list world;
+
+    auto mat1 = make_shared<lambertian>(color(0.5, 0.5, 0.5));
+    world.add(make_shared<triangle>(vec3(0, 0, -1), vec3(1, 0, -1), vec3(0, 1, -1), mat1));
+    //world.add(make_shared<sphere>(vec3(0, 0, -1), 0.5, mat1));
+
+    camera cam;
+
+    cam.aspect_ratio      = 16.0 / 9.0;
+    cam.image_width       = 400;
+    cam.samples_per_pixel = 1;
+    cam.max_depth         = 30;
+
+    cam.vfov     = 90;
+    cam.lookfrom = point3(-2,2,1);
+    cam.lookat   = point3(0,0,-1);
+    cam.vup      = vec3(0,1,0);
+
+    cam.defocus_angle = 0.0;
+    cam.focus_dist    = 3;
+
+    cam.render(world);
 }
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    switch (3)
+    switch (4)
     {
         case 1: make_big_scene();
         case 2: make_small_test_scene();
         case 3: quads();
+        case 4: load_obj(); break;
+        case 5: triangle_test();
     }
 
     auto end = std::chrono::high_resolution_clock::now();

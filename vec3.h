@@ -55,6 +55,10 @@ public:
         //within a sphere with a hole cut out of it
         return vec3(random_double(min, max), random_double(min, max), random_double(min, max));
     }
+    std::string to_string() const
+    {
+        return "{" + std::to_string(e[0]) + ", " + std::to_string(e[1]) + ", " + std::to_string(e[2]) + "}";
+    }
 };
 
 //point3 is just an alias for vec3, but useful for geometric clarity in the code

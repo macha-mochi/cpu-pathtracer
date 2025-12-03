@@ -9,7 +9,7 @@
 
 class sphere : public hittable{
 public:
-    sphere(const point3& center, double radius, shared_ptr<material> mat)
+    sphere(const point3& center, double radius, const shared_ptr<material>& mat)
     : center(center), radius(std::fmax(0, radius)), mat(mat)
     {
         //Stationary sphere
