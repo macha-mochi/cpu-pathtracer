@@ -6,6 +6,7 @@
 #define QUAD_H
 
 #include "hittable.h"
+#include "hittable_list.h"
 
 class quad : public hittable
 {
@@ -64,5 +65,24 @@ private:
     vec3 normal;
     double D;
 };
+inline shared_ptr<hittable_list> box(const point3& a, const point3& b, shared_ptr<material> mat)
+{
+    //Returns the 3d box (6 sides) that contains a and b as max points
+    auto sides = make_shared<hittable_list>();
+    auto min = point3(std::fmin(a.x(), b.x()), std::fmin(a.y(), b.y()), std::fmin(a.z(), b.z()));
+    auto max = point3(std::fmax(a.x(), b.x()), std::fmax(a.y(), b.y()), std::fmax(a.z(), b.z()));
+
+    auto dx = vec3(max.x() - min.x(), 0, 0);
+    auto dy = vec3(0, max.y() - min.y(), 0);
+    auto dz = vec3(0, 0, max.z() - min.z());
+    sides->add(make_shared<quad>(min, dx, dy, mat));
+    sides->add(make_shared<quad>(min, dy, dz, mat));
+    sides->add(make_shared<quad>(min, dx, dz, mat));
+    sides->add(make_shared<quad>(max, -dx, -dy, mat));
+    sides->add(make_shared<quad>(max, -dy, -dz, mat));
+    sides->add(make_shared<quad>(max, -dx, -dz, mat));
+
+    return sides;
+}
 
 #endif //QUAD_H

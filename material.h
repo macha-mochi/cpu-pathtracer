@@ -19,6 +19,10 @@ public:
     {
         return false;
     }
+    virtual color emitted() const
+    {
+        return color(0, 0, 0); //default emit is black
+    }
 };
 
 class lambertian : public material
@@ -109,6 +113,19 @@ private:
         r0 = r0 * r0;
         return r0 + (1-r0)*std::pow((1-cosine), 5);
     }
+};
+
+class diffuse_light : public material
+{
+public:
+    diffuse_light(const color& emit) : emit(emit) {}
+
+    color emitted() const override
+    {
+        return emit;
+    }
+private:
+    color emit;
 };
 
 
