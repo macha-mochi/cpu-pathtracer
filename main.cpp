@@ -246,6 +246,8 @@ void cornell_box() {
     auto white = make_shared<lambertian>(color(.73, .73, .73));
     auto green = make_shared<lambertian>(color(.12, .45, .15));
     auto light = make_shared<diffuse_light>(color(15, 15, 15));
+    auto metal_mat = make_shared<metal>(color(0.75, 0.75, 0.75), 0);
+    auto glass = make_shared<dielectric>(1.5);
 
     world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
     world.add(make_shared<quad>(point3(0,0,0), vec3(0,555,0), vec3(0,0,555), red));
@@ -255,22 +257,30 @@ void cornell_box() {
     world.add(make_shared<quad>(point3(0,0,555), vec3(555,0,0), vec3(0,555,0), white));
 
     shared_ptr<hittable> bigger_box = box(point3(0,0,0), point3(165,330,165), white);
-    bigger_box = make_shared<rotate_y>(bigger_box, 15);
+    bigger_box = make_shared<rotate_y>(bigger_box, -15);
     bigger_box = make_shared<translate>(bigger_box, vec3(130,0,295)); //265
     world.add(bigger_box);
 
     shared_ptr<hittable> smaller_box = box(point3(0,0,0), point3(165,165,165), white);
-    smaller_box = make_shared<rotate_y>(smaller_box, -18);
+    smaller_box = make_shared<rotate_y>(smaller_box, 18);
     smaller_box = make_shared<translate>(smaller_box, vec3( 265,0,65)); //130
     world.add(smaller_box);
+
+    world.add(make_shared<sphere>(point3(300, 300, 300), 70, metal_mat));
+    world.add(make_shared<sphere>(point3(450, 300, 300), 70, glass));
+
+    /*shared_ptr<hittable> test_box = box(point3(0, 0, 0), point3(200, 200, 200), white);
+    test_box = make_shared<translate>(test_box, vec3(100, 0, 300));
+    test_box = make_shared<rotate_y>(test_box, 45);
+    world.add(test_box);*/
 
     world = hittable_list(make_shared<bvh_node>(world));
 
     camera cam;
 
     cam.aspect_ratio      = 1.0;
-    cam.image_width       = 600; //600
-    cam.samples_per_pixel = 200; //200
+    cam.image_width       = 300; //600
+    cam.samples_per_pixel = 100; //200
     cam.max_depth         = 50; //50
     cam.background        = color(0,0,0);
 

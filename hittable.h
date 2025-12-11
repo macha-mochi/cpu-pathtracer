@@ -120,15 +120,16 @@ public:
          * new x: cos(theta)x + sin(theta)z
          * new z: -sin(theta)x + cos(theta)z
          */
+        //but here we want to rotate by -theta, cos(-theta) = cos(theta) and sin(-theta) = -sin(theta)
         auto origin = point3(
-            cos_theta * r.origin().x() + sin_theta * r.origin().z(),
+            cos_theta * r.origin().x() - sin_theta * r.origin().z(),
             r.origin().y(),
-            -sin_theta * r.origin().x() + cos_theta * r.origin().z()
+            sin_theta * r.origin().x() + cos_theta * r.origin().z()
         );
         auto direction = vec3(
-            cos_theta * r.direction().x() + sin_theta * r.direction().z(),
+            cos_theta * r.direction().x() - sin_theta * r.direction().z(),
             r.direction().y(),
-            -sin_theta * r.direction().x() + cos_theta * r.direction().z()
+            sin_theta * r.direction().x() + cos_theta * r.direction().z()
         );
 
         ray rotated_ray(origin, direction);
