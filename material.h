@@ -66,8 +66,6 @@ public:
         }
         scattered = ray(rec.p, scatter_direction);
         attenuation = albedo;
-        //attenuation is just what % of light is reflected in each channel which depends on the color of the obj
-        //since the channels that with higher % reflected are those corresponding to the obj color
         return true;*/
 
         const vec3& wo = r_in.direction() * -1.0;
@@ -176,6 +174,37 @@ private:
         auto r0 = (1-refraction_index) / (1+refraction_index);
         r0 = r0 * r0;
         return r0 + (1-r0)*std::pow((1-cosine), 5);
+    }
+
+    //eta_i : index of refraction for incident material
+    //eta_t : index of refraction for transmitted material
+    //returns how much light is reflected (0 = none, 1 = all)
+    static double Fr_dielectric(double cos_theta_i, double eta_i, double eta_t)
+    {
+        if (cos_theta_i < 0)
+        {
+            //the ray is on the inside, swap the etas
+            double temp = eta_i;
+            eta_i = eta_t;
+            eta_t = temp;
+            cos_theta_i = std::abs(cos_theta_i); //ensure cos_theta_i is nonneg
+        }
+
+        //find cos_theta_t using snell's law
+        double sin_theta_i = std::sqrt(std::max(static_cast<double>(0), 1 - cos_theta_i * cos_theta_i));
+        double sin_theta_t = eta_i * sin_theta_i / eta_t;
+        if (sin_theta_t >= 1)
+        {
+            return 1; //no solution for snell's law, all light reflected
+        }
+        double cos_theta_t = std::sqrt(std::max(static_cast<double>(0), 1 - sin_theta_t * sin_theta_t));
+
+        double r_parallel = (eta_t * cos_theta_i - eta_i * cos_theta_t)
+        / (eta_t * cos_theta_i + eta_i * cos_theta_t);
+        double r_perp = (eta_i * cos_theta_i - eta_t * cos_theta_t)
+        / (eta_i * cos_theta_i + eta_t * cos_theta_t);
+
+        return (r_parallel * r_parallel + r_perp * r_perp) / 2;
     }
 };
 
