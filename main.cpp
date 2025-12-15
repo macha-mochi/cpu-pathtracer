@@ -266,8 +266,8 @@ void cornell_box() {
     smaller_box = make_shared<translate>(smaller_box, vec3( 265,0,65)); //130
     world.add(smaller_box);
 
-    world.add(make_shared<sphere>(point3(300, 300, 300), 70, metal_mat));
-    world.add(make_shared<sphere>(point3(450, 300, 300), 70, glass));
+    //world.add(make_shared<sphere>(point3(300, 300, 300), 70, metal_mat));
+    //world.add(make_shared<sphere>(point3(450, 300, 300), 70, glass));
 
     /*shared_ptr<hittable> test_box = box(point3(0, 0, 0), point3(200, 200, 200), white);
     test_box = make_shared<translate>(test_box, vec3(100, 0, 300));
@@ -279,7 +279,7 @@ void cornell_box() {
     camera cam;
 
     cam.aspect_ratio      = 1.0;
-    cam.image_width       = 300; //600
+    cam.image_width       = 200; //600
     cam.samples_per_pixel = 100; //200
     cam.max_depth         = 50; //50
     cam.background        = color(0,0,0);

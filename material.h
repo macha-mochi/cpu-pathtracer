@@ -5,8 +5,20 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
+#include <numbers>
 #include "color.h"
 #include "hittable.h"
+
+class BSDF_sample{
+public:
+    vec3 wi;
+    color f;
+    double pdf = 0;
+    bool is_delta = false;
+    BSDF_sample() = default;
+    BSDF_sample(const vec3& wi, const color& f, const double pdf, const bool is_delta) :
+    wi(wi), f(f), pdf(pdf), is_delta(is_delta){};
+};
 
 class material
 {
@@ -18,6 +30,18 @@ public:
     ) const
     {
         return false;
+    }
+    virtual color f_s(const vec3& wo, const vec3& wi, const hit_record& rec) const
+    {
+        return color(0,0,0);
+    }
+    virtual double pdf(const vec3& wo, const vec3& wi, const hit_record& rec) const
+    {
+        return 0.0;
+    }
+    virtual BSDF_sample sample(const vec3& wo, const hit_record& rec) const
+    {
+        return BSDF_sample();
     }
     virtual color emitted() const
     {
@@ -32,7 +56,8 @@ public:
 
     bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const override
     {
-        auto scatter_direction = rec.normal + random_unit_vector();
+        //RT in one weekend impl
+        /*auto scatter_direction = rec.normal + random_unit_vector();
 
         //catch degen scatter directions
         if (scatter_direction.near_zero())
@@ -43,8 +68,47 @@ public:
         attenuation = albedo;
         //attenuation is just what % of light is reflected in each channel which depends on the color of the obj
         //since the channels that with higher % reflected are those corresponding to the obj color
+        return true;*/
+
+        const vec3& wo = r_in.direction() * -1.0;
+        BSDF_sample s = sample(wo, rec);
+        scattered = ray(rec.p, s.wi);
+        attenuation = albedo;
         return true;
-        //instead of returning multiple vars we simply change the non-cons references ohhhhh
+    }
+    color f_s(const vec3& wo, const vec3& wi, const hit_record& rec) const override
+    {
+        if (dot(rec.normal, wi) <= 0.0)
+        {
+            return color(0,0,0); //incoming ray is below the surface
+        }
+        return albedo / M_PI;
+    }
+    double pdf(const vec3& wo, const vec3& wi, const hit_record& rec) const override
+    {
+        double cos_theta = dot(rec.normal, wi);
+        if (cos_theta <= 0.0)
+        {
+            return 0; //prob density of getting that outgoing direction is 0
+        }
+        return cos_theta / M_PI;
+    }
+    BSDF_sample sample(const vec3& wo, const hit_record& rec) const override
+    {
+        //generate a wi using cosine weighted hemisphere sampling
+        vec3 wi_local = cos_weighted_random_in_hemisphere();
+
+        //convert to world space by creating an orthonormal basis at the hit point, with up = normal
+        const vec3& n = rec.normal;
+        vec3 a = (std::abs(rec.normal.x()) > 0.95) ? vec3(0, 1, 0) : vec3(1, 0, 0);
+        //a is just any vector that's not parallel to normal
+        vec3 t1 = unit_vector(cross(a, n));
+        vec3 t2 = cross(n, t1);
+
+        vec3 wi = wi_local.x() * t1 + wi_local.y() * t2 + wi_local.z() * n;
+
+        //populate a bsdf_sample with calculated wi, f, pdf, is_delta
+        return BSDF_sample(wi, f_s(wo, wi, rec), pdf(wo, wi, rec), false);
     }
 private:
     color albedo;
@@ -127,6 +191,7 @@ public:
 private:
     color emit;
 };
+
 
 
 #endif //MATERIAL_H

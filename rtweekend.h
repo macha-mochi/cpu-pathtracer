@@ -10,6 +10,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <random>
 
 //c++ std usings
 using std::make_shared;
@@ -28,7 +29,11 @@ inline double degrees_to_radians(double degrees)
 inline double random_double()
 {
     //returns a random real in [0, 1)
-    return std::rand() / (RAND_MAX + 1.0);
+    //return std::rand() / (RAND_MAX + 1.0);
+
+    static std::mt19937 generator (std::random_device{}());
+    static std::uniform_real_distribution<> distribution(0.0, 1.0);
+    return distribution(generator);
 }
 inline double random_double(double min, double max){
     //returns a random real in [min, max)

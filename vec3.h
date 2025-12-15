@@ -5,6 +5,8 @@
 #ifndef VEC3_H
 #define VEC3_H
 
+#include <random>
+
 class vec3 {
 public:
     double e[3];
@@ -104,6 +106,15 @@ inline vec3 random_in_unit_disk()
         auto p = vec3(random_double(-1, 1), random_double(-1, 1), 0);
         if (p.length_squared() < 1) return p;
     }
+}
+inline vec3 cos_weighted_random_in_hemisphere()
+{
+    double r1 = random_double();
+    double r2 = random_double();
+
+    double r = sqrt(r1);
+    double phi = 2 * M_PI * r2;
+    return vec3(r * cos(phi), r * sin(phi), sqrt(1 - r1));
 }
 inline vec3 random_unit_vector()
 {
