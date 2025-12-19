@@ -152,6 +152,7 @@ private:
         color color_from_emission = rec.mat->emitted();
         if (!rec.mat->scatter(r, rec, attenuation,scattered))
             return color_from_emission; //no scattering going on
+        std::clog << "ray ior: " << r.current_ior() << " new ray ior: " << scattered.current_ior() << std::endl;
         color color_from_scatter = attenuation * ray_color(scattered, depth-1, world);
         return color_from_emission + color_from_scatter;
     }

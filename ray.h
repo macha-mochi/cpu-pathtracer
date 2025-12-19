@@ -11,10 +11,18 @@ class ray {
 public:
     ray() {}
 
-    ray(const point3& origin, const vec3& direction) : orig(origin), dir(direction) {}
+    ray(const point3& origin, const vec3& direction) : orig(origin), dir(direction)
+    {
+        eta = 1.0; //for air
+    }
 
     const point3& origin() const {return orig;}
     const vec3& direction() const {return dir;}
+    double current_ior() const {return eta;}
+    void set_eta(const double e)
+    {
+        eta = e;
+    }
 
     point3 at(double t) const {
         return orig + t*dir;
@@ -23,6 +31,7 @@ public:
 private:
     point3 orig;
     vec3 dir;
+    double eta; //ior of current medium you're in
 };
 
 #endif //RAY_H

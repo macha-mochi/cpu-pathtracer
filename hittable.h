@@ -16,6 +16,7 @@ class hit_record{
         shared_ptr<material> mat;
         double t;
         bool front_face;
+        double incident_eta = 1.0; //ior of medium ray was traveling through BEFORE hit, 1 by default
 
         void set_face_normal(const ray& r, const vec3& outward_normal)
         {

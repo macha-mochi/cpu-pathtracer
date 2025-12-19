@@ -53,6 +53,7 @@ public:
         rec.p = r.at(t);
         rec.set_face_normal(r, normal);
         rec.mat = mat;
+        rec.incident_eta = r.current_ior();
 
         return true;
     }
