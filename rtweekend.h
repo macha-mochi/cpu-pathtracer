@@ -39,6 +39,13 @@ inline double random_double(double min, double max){
     //returns a random real in [min, max)
     return min + (max-min)*random_double();
 }
+inline int random_int(int min, int max)
+{
+    //returns a random int in [min, max]
+    static std::mt19937 generator (std::random_device{}());
+    static std::uniform_int_distribution<> distribution(min, max);
+    return distribution(generator);
+}
 //common headers
 #include "color.h"
 #include "ray.h"

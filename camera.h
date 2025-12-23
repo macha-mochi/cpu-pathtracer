@@ -147,14 +147,24 @@ private:
         {
             return background;
         }
-        ray scattered;
+        /*ray scattered;
         color attenuation;
         color color_from_emission = rec.mat->emitted();
         if (!rec.mat->scatter(r, rec, attenuation,scattered))
             return color_from_emission; //no scattering going on
         std::clog << "ray ior: " << r.current_ior() << " new ray ior: " << scattered.current_ior() << std::endl;
         color color_from_scatter = attenuation * ray_color(scattered, depth-1, world);
+        return color_from_emission + color_from_scatter;*/
+
+        bsdf b = rec.mat->create_bsdf(rec);
+        vec3 wo = -r.direction();
+        bsdf_sample sample = b.sample(wo);
+        double cos_theta = dot(wo, rec.normal);
+        ray scattered = ray(rec.p, sample.wi);
+        color color_from_emission = rec.mat->emitted();
+        color color_from_scatter = sample.f * cos_theta * ray_color(scattered, depth - 1, world);
         return color_from_emission + color_from_scatter;
+
     }
 };
 

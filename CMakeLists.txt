@@ -20,4 +20,5 @@ add_executable(raytracing main.cpp
         triangle_mesh.h
         obj_loader.h
         triangle.h
-        bxdf.h)
+        bxdf.h
+        fresnel.h)

@@ -7,17 +7,7 @@
 
 #include "color.h"
 #include "hittable.h"
-
-class BSDF_sample{
-public:
-    vec3 wi;
-    color f;
-    double pdf = 0;
-    bool is_delta = false;
-    BSDF_sample() = default;
-    BSDF_sample(const vec3& wi, const color& f, const double pdf, const bool is_delta) :
-    wi(wi), f(f), pdf(pdf), is_delta(is_delta){};
-};
+#include "bxdf.h"
 
 class material
 {
@@ -30,17 +20,9 @@ public:
     {
         return false;
     }
-    virtual color f_s(const vec3& wo, const vec3& wi, const hit_record& rec) const
+    virtual bsdf create_bsdf(const hit_record& rec) const
     {
-        return color(0,0,0);
-    }
-    virtual double pdf(const vec3& wo, const vec3& wi, const hit_record& rec) const
-    {
-        return 0.0;
-    }
-    virtual BSDF_sample sample(const vec3& wo, const hit_record& rec) const
-    {
-        return BSDF_sample();
+        return bsdf{rec};
     }
     virtual color emitted() const
     {
@@ -67,45 +49,18 @@ public:
         attenuation = albedo;
         return true;*/
 
-        const vec3& wo = r_in.direction() * -1.0;
-        BSDF_sample s = sample(wo, rec);
+        /*const vec3& wo = r_in.direction() * -1.0;
+        bsdf_sample s = sample(wo, rec);
         scattered = ray(rec.p, s.wi);
-        attenuation = albedo;
+        attenuation = albedo;*/
         return true;
     }
-    color f_s(const vec3& wo, const vec3& wi, const hit_record& rec) const override
-    {
-        if (dot(rec.normal, wi) <= 0.0)
-        {
-            return color(0,0,0); //incoming ray is below the surface
-        }
-        return albedo / M_PI;
-    }
-    double pdf(const vec3& wo, const vec3& wi, const hit_record& rec) const override
-    {
-        double cos_theta = dot(rec.normal, wi);
-        if (cos_theta <= 0.0)
-        {
-            return 0; //prob density of getting that outgoing direction is 0
-        }
-        return cos_theta / M_PI;
-    }
-    BSDF_sample sample(const vec3& wo, const hit_record& rec) const override
-    {
-        //generate a wi using cosine weighted hemisphere sampling
-        vec3 wi_local = cos_weighted_random_in_hemisphere();
 
-        //convert to world space by creating an orthonormal basis at the hit point, with up = normal
-        const vec3& n = rec.normal;
-        vec3 a = (std::abs(rec.normal.x()) > 0.95) ? vec3(0, 1, 0) : vec3(1, 0, 0);
-        //a is just any vector that's not parallel to normal
-        vec3 t1 = unit_vector(cross(a, n));
-        vec3 t2 = cross(n, t1);
-
-        vec3 wi = wi_local.x() * t1 + wi_local.y() * t2 + wi_local.z() * n;
-
-        //populate a bsdf_sample with calculated wi, f, pdf, is_delta
-        return BSDF_sample(wi, f_s(wo, wi, rec), pdf(wo, wi, rec), false);
+    bsdf create_bsdf(const hit_record& rec) const override
+    {
+        bsdf b = bsdf{rec};
+        b.add(lambertian_reflection(albedo));
+        return b;
     }
 private:
     color albedo;
@@ -183,15 +138,15 @@ public:
         //out of say, glass into air it should be reset to 1 with creation of new way
         return true;
     }
-    color f_s(const vec3& wo, const vec3& wi, const hit_record& rec) const override
+    color f_s(const vec3& wo, const vec3& wi, const hit_record& rec) const
     {
         return color(0,0,0); //nothing scatters in any direction except the one light reflects in
     }
-    double pdf(const vec3& wo, const vec3& wi, const hit_record& rec) const override
+    double pdf(const vec3& wo, const vec3& wi, const hit_record& rec) const
     {
         return 0.0; //we don't use a pdf for speculars bc there's only one correct direction we can calculate
     }
-    BSDF_sample sample(const vec3& wo, const hit_record& rec) const override
+    bsdf_sample sample(const vec3& wo, const hit_record& rec) const
     {
         //assume smooth for this, can add microfacets in the gpu version hehe
         vec3 unit_direction = unit_vector(wo);
@@ -209,13 +164,13 @@ public:
             wi = reflect(unit_direction, rec.normal);
             double f_s = reflectance / cos_theta;
             //assuming clear glass aka attenuation = all 1
-            return BSDF_sample(wi, color(1.0, 1.0, 1.0) * f_s, 1, true);
+            return bsdf_sample(wi, color(1.0, 1.0, 1.0) * f_s, 1, true);
         }else //refract
         {
             wi = refract(unit_direction, rec.normal, eta_i/eta_t);
             //TODO somehow update the ior of the ray
             double f_s = (1-reflectance) / cos_theta;
-            return BSDF_sample(wi, color(1.0, 1.0, 1.0) * f_s, 1, true);
+            return bsdf_sample(wi, color(1.0, 1.0, 1.0) * f_s, 1, true);
 
         }
     }
