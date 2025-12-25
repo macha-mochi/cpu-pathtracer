@@ -80,6 +80,29 @@ public:
     {
         return bsdf_sample();
     }
+    std::string flags_to_string()
+    {
+        std::string s;
+        if (is_reflective(flags))
+        {
+            s+="Reflective";
+        }else if (is_transmission(flags))
+        {
+            s+="Transmission";
+        }
+        s+= " ";
+        if (is_diffuse(flags))
+        {
+            s+="Diffuse";
+        }else if (is_glossy(flags))
+        {
+            s+="Glossy";
+        }else if (is_specular(flags))
+        {
+            s+="Specular";
+        }
+        return s;
+    }
 };
 
 class lambertian_reflection : public bxdf
@@ -133,13 +156,15 @@ private:
 class bsdf
 {
 public:
-    std::vector<bxdf> bxdfs;
+    std::vector<std::unique_ptr<bxdf>> bxdfs;
     const hit_record& rec;
 
     bsdf(const hit_record& rec) : rec(rec) {};
-    void add(const bxdf& f)
+
+    template <typename T, typename... Args>
+    void add(Args&&... args)
     {
-        bxdfs.push_back(f);
+        bxdfs.push_back(std::make_unique<T>(std::forward<Args>(args)...));
     }
     //the physically correct f_s from each bxdf
     color f_s(const vec3& wo, const vec3& wi) const
@@ -149,7 +174,7 @@ public:
         color result = color(0, 0, 0);
         for (const auto & bxdf : bxdfs)
         {
-            result+=bxdf.f_s(wo, wi); //if is delta, this will be 0 so issok
+            result+=bxdf->f_s(wo, wi); //if is delta, this will be 0 so issok
         }
         return result;
     }
@@ -160,7 +185,7 @@ public:
         double result = 0.0;
         for (const auto & bxdf : bxdfs)
         {
-            result+=w_k * bxdf.pdf(wo, wi); //if is delta, this will be 0 so issok
+            result+=w_k * bxdf->pdf(wo, wi); //if is delta, this will be 0 so issok
         }
         return result;
     }
@@ -168,7 +193,8 @@ public:
     bsdf_sample sample(const vec3& wo_world) const
     {
         //TODO i will use uniform for now and then switch to balance heuristic or whatever later so i can compare
-        bxdf b = bxdfs[random_int(0, static_cast<int>(bxdfs.size()) - 1)];
+        int rand_ind = random_int(0,static_cast<int>(bxdfs.size()) - 1);
+        const bxdf& b = *bxdfs[rand_ind];
         vec3 wo = local_to_render(wo_world);
         bsdf_sample sample_for_dir = b.sample(wo);
         vec3 wi = sample_for_dir.wi;
@@ -202,6 +228,16 @@ public:
         vec3 t2 = cross(n, t1);
 
         return v_render.x() * t1 + v_render.y() * t2 + v_render.z() * n;
+    }
+    std::string flags_to_string()
+    {
+        std::string s;
+        for (auto & bxdf : bxdfs)
+        {
+            s+=bxdf->flags_to_string();
+            s+="\n";
+        }
+        return s;
     }
 };
 

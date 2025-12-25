@@ -888,7 +888,6 @@ CMakeFiles/raytracing.dir/main.cpp.o: /Users/fayeyu/CLionProjects/raytracing/mai
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/memory \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/mutex \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/new \
-  /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/numbers \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/numeric \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/optional \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/ostream \
@@ -1092,9 +1091,11 @@ CMakeFiles/raytracing.dir/main.cpp.o: /Users/fayeyu/CLionProjects/raytracing/mai
   /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/17/include/stdint.h \
   /Users/fayeyu/CLionProjects/raytracing/aabb.h \
   /Users/fayeyu/CLionProjects/raytracing/bvh_node.h \
+  /Users/fayeyu/CLionProjects/raytracing/bxdf.h \
   /Users/fayeyu/CLionProjects/raytracing/camera.h \
   /Users/fayeyu/CLionProjects/raytracing/color.h \
   /Users/fayeyu/CLionProjects/raytracing/filesystem.hpp \
+  /Users/fayeyu/CLionProjects/raytracing/fresnel.h \
   /Users/fayeyu/CLionProjects/raytracing/hittable.h \
   /Users/fayeyu/CLionProjects/raytracing/hittable_list.h \
   /Users/fayeyu/CLionProjects/raytracing/interval.h \
@@ -1119,7 +1120,11 @@ CMakeFiles/raytracing.dir/main.cpp.o: /Users/fayeyu/CLionProjects/raytracing/mai
 
 /Users/fayeyu/CLionProjects/raytracing/interval.h:
 
+/Users/fayeyu/CLionProjects/raytracing/fresnel.h:
+
 /Users/fayeyu/CLionProjects/raytracing/camera.h:
+
+/Users/fayeyu/CLionProjects/raytracing/bxdf.h:
 
 /Users/fayeyu/CLionProjects/raytracing/aabb.h:
 
@@ -3262,8 +3267,6 @@ CMakeFiles/raytracing.dir/main.cpp.o: /Users/fayeyu/CLionProjects/raytracing/mai
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__numeric/midpoint.h:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__type_traits/is_abstract.h:
-
-/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/numbers:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/arm/_limits.h:
 

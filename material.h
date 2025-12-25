@@ -59,7 +59,7 @@ public:
     bsdf create_bsdf(const hit_record& rec) const override
     {
         bsdf b = bsdf{rec};
-        b.add(lambertian_reflection(albedo));
+        b.add<lambertian_reflection>(albedo);
         return b;
     }
 private:
@@ -220,10 +220,11 @@ private:
     }
 };
 
-class diffuse_light : public material
+class diffuse_light : public lambertian
 {
 public:
-    diffuse_light(const color& emit) : emit(emit) {}
+    diffuse_light(const color& emit, const color& albedo) : emit(emit), lambertian(albedo)
+    {}
 
     color emitted() const override
     {

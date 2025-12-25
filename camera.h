@@ -157,14 +157,16 @@ private:
         return color_from_emission + color_from_scatter;*/
 
         bsdf b = rec.mat->create_bsdf(rec);
+        //std::clog << b.flags_to_string() << std::endl;
+        //std::clog << b.bxdfs.size() << std::endl;
         vec3 wo = -r.direction();
         bsdf_sample sample = b.sample(wo);
-        double cos_theta = dot(wo, rec.normal);
+        double cos_theta = dot(wo, rec.normal) / (wo.length() * rec.normal.length());
         ray scattered = ray(rec.p, sample.wi);
         color color_from_emission = rec.mat->emitted();
+        //std::clog << sample.f << " " << cos_theta << std::endl;
         color color_from_scatter = sample.f * cos_theta * ray_color(scattered, depth - 1, world);
         return color_from_emission + color_from_scatter;
-
     }
 };
 

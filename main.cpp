@@ -219,7 +219,7 @@ void simple_light()
     world.add(make_shared<sphere>(point3(0, 2, 0), 2, ground_mat));
 
     auto intensity = 8;
-    auto difflight = make_shared<diffuse_light>(8*color(1.0, 0, 0.5));
+    auto difflight = make_shared<diffuse_light>(8*color(1.0, 0, 0.5), color(1.0, 1.0, 1.0));
     world.add(make_shared<quad>(point3(3, 1, -2), vec3(2, 0, 0), vec3(0, 2, 0), difflight));
 
     camera cam;
@@ -245,7 +245,7 @@ void cornell_box() {
     auto red   = make_shared<lambertian>(color(.65, .05, .05));
     auto white = make_shared<lambertian>(color(.73, .73, .73));
     auto green = make_shared<lambertian>(color(.12, .45, .15));
-    auto light = make_shared<diffuse_light>(color(15, 15, 15));
+    auto light = make_shared<diffuse_light>(color(15, 15, 15), color(1.0, 1.0, 1.0));
     auto metal_mat = make_shared<metal>(color(0.75, 0.75, 0.75), 0);
     auto glass = make_shared<dielectric>(1.5);
 
@@ -279,9 +279,9 @@ void cornell_box() {
     camera cam;
 
     cam.aspect_ratio      = 1.0;
-    cam.image_width       = 200; //600
-    cam.samples_per_pixel = 100; //200
-    cam.max_depth         = 50; //50
+    cam.image_width       = 100; //600
+    cam.samples_per_pixel = 300; //200
+    cam.max_depth         = 70; //50
     cam.background        = color(0,0,0);
 
     cam.vfov     = 40;

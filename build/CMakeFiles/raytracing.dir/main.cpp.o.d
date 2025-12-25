@@ -1054,7 +1054,8 @@ CMakeFiles/raytracing.dir/main.cpp.o: \
   /Users/fayeyu/CLionProjects/raytracing/hittable.h \
   /Users/fayeyu/CLionProjects/raytracing/camera.h \
   /Users/fayeyu/CLionProjects/raytracing/material.h \
-  /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/numbers \
+  /Users/fayeyu/CLionProjects/raytracing/bxdf.h \
+  /Users/fayeyu/CLionProjects/raytracing/fresnel.h \
   /Users/fayeyu/CLionProjects/raytracing/obj_loader.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/fstream \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__filesystem/path.h \
