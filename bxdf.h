@@ -181,7 +181,7 @@ public:
     //the marginal pdf for wi, equal to sum(i = 1 -> k) Pr(choosing kth lobe) * Pr(getting wi from the kth lobe)
     double pdf(const vec3& wo, const vec3& wi) const
     {
-        double w_k = 1.0/static_cast<double>(bxdfs.size() - 1); //TODO change to not be uniform later
+        double w_k = 1.0/static_cast<double>(bxdfs.size()); //TODO change to not be uniform later
         double result = 0.0;
         for (const auto & bxdf : bxdfs)
         {

@@ -1053,9 +1053,11 @@ CMakeFiles/raytracing.dir/main.cpp.o: \
   /Users/fayeyu/CLionProjects/raytracing/hittable_list.h \
   /Users/fayeyu/CLionProjects/raytracing/hittable.h \
   /Users/fayeyu/CLionProjects/raytracing/camera.h \
+  /Users/fayeyu/CLionProjects/raytracing/light.h \
   /Users/fayeyu/CLionProjects/raytracing/material.h \
   /Users/fayeyu/CLionProjects/raytracing/bxdf.h \
   /Users/fayeyu/CLionProjects/raytracing/fresnel.h \
+  /Users/fayeyu/CLionProjects/raytracing/quad.h \
   /Users/fayeyu/CLionProjects/raytracing/obj_loader.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/fstream \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__filesystem/path.h \
@@ -1104,5 +1106,4 @@ CMakeFiles/raytracing.dir/main.cpp.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/langinfo.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/_langinfo.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/xlocale/_langinfo.h \
-  /Users/fayeyu/CLionProjects/raytracing/sphere.h \
-  /Users/fayeyu/CLionProjects/raytracing/quad.h
+  /Users/fayeyu/CLionProjects/raytracing/sphere.h

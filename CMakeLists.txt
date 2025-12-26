@@ -21,4 +21,5 @@ add_executable(raytracing main.cpp
         obj_loader.h
         triangle.h
         bxdf.h
-        fresnel.h)
+        fresnel.h
+        light.h)

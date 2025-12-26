@@ -4,6 +4,7 @@
 #include "bvh_node.h"
 #include "camera.h"
 #include "hittable_list.h"
+#include "light.h"
 #include "obj_loader.h"
 #include "sphere.h"
 #include "quad.h"
@@ -241,17 +242,20 @@ void simple_light()
 }
 void cornell_box() {
     hittable_list world;
+    std::vector<shared_ptr<light>> lights;
 
     auto red   = make_shared<lambertian>(color(.65, .05, .05));
     auto white = make_shared<lambertian>(color(.73, .73, .73));
     auto green = make_shared<lambertian>(color(.12, .45, .15));
-    auto light = make_shared<diffuse_light>(color(15, 15, 15), color(1.0, 1.0, 1.0));
+    auto light_mat = make_shared<diffuse_light>(color(15, 15, 15), color(1.0, 1.0, 1.0));
     auto metal_mat = make_shared<metal>(color(0.75, 0.75, 0.75), 0);
     auto glass = make_shared<dielectric>(1.5);
 
     world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
     world.add(make_shared<quad>(point3(0,0,0), vec3(0,555,0), vec3(0,0,555), red));
-    world.add(make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light));
+    auto l = make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light_mat);
+    world.add(l);
+    lights.push_back(make_shared<quad_light>(l, light_mat));
     world.add(make_shared<quad>(point3(0,0,0), vec3(555,0,0), vec3(0,0,555), white));
     world.add(make_shared<quad>(point3(555,555,555), vec3(-555,0,0), vec3(0,0,-555), white));
     world.add(make_shared<quad>(point3(0,0,555), vec3(555,0,0), vec3(0,555,0), white));
@@ -280,8 +284,8 @@ void cornell_box() {
 
     cam.aspect_ratio      = 1.0;
     cam.image_width       = 100; //600
-    cam.samples_per_pixel = 300; //200
-    cam.max_depth         = 70; //50
+    cam.samples_per_pixel = 100; //200
+    cam.max_depth         = 50; //50
     cam.background        = color(0,0,0);
 
     cam.vfov     = 40;
@@ -292,7 +296,7 @@ void cornell_box() {
 
     cam.defocus_angle = 0;
 
-    cam.render(world);
+    cam.render(world, lights);
 }
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 int main() {

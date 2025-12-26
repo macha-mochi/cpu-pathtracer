@@ -7,6 +7,7 @@
 
 #include "color.h"
 #include "hittable.h"
+#include "light.h"
 #include "material.h"
 #include "ray.h"
 #include "rtweekend.h"
@@ -31,7 +32,12 @@ public:
     double defocus_angle = 0; //Variation angle of rays thru each pixel
     double focus_dist = 10; //distance from camera lookfrom point to plane of perfect focus
 
-    void render(const hittable&world)
+    void render(const hittable& world)
+    {
+        std::vector<shared_ptr<light>> lights;
+        render(world, lights);
+    }
+    void render(const hittable& world, const std::vector<shared_ptr<light>>& lights)
     {
         initialize();
 
@@ -45,7 +51,7 @@ public:
                 for (int sample = 0; sample < samples_per_pixel; sample++)
                 {
                     ray r = get_ray(i, j);
-                    pixel_color+=ray_color(r, max_depth, world); //just a vector3 so we can add
+                    pixel_color+=ray_color(r, max_depth, world, lights); //just a vector3 so we can add
                 }
 
                 //pixel_samples_scale is what we need to mult by to average out pixel_color
@@ -133,7 +139,7 @@ private:
         return center + (p[0] * defocus_disk_u + p[1] * defocus_disk_v);
     }
 
-    color ray_color(const ray& r, int depth, const hittable& world) const
+    color ray_color(const ray& r, int depth, const hittable& world, const std::vector<shared_ptr<light>>& lights) const
     {
         if (depth <= 0)
         {
@@ -164,9 +170,41 @@ private:
         double cos_theta = dot(wo, rec.normal) / (wo.length() * rec.normal.length());
         ray scattered = ray(rec.p, sample.wi);
         color color_from_emission = rec.mat->emitted();
-        //std::clog << sample.f << " " << cos_theta << std::endl;
-        color color_from_scatter = sample.f * cos_theta * ray_color(scattered, depth - 1, world);
-        return color_from_emission + color_from_scatter;
+        //std::clog << sample.f << " " << cos_theta << " " << sample.pdf << std::endl;
+        //BSDF sampling
+        color indirect_color = sample.f * cos_theta * ray_color(scattered, depth - 1, world, lights) / sample.pdf;
+
+        //NEE sampling
+        //NEE
+        std::clog << std::endl;
+        auto& chosen_light = lights[random_int(0, static_cast<int>(lights.size()) - 1)];
+        light_sample l_sample = chosen_light->sample(rec.p);
+        color direct_color;
+        if (l_sample.p_solid_angle > 0)
+        {
+            //std::clog << l_sample.emitted << " " << l_sample.p_solid_angle << std::endl;
+            ray shadow_ray = ray(rec.p, l_sample.wi);
+            hit_record world_shadow_rec;
+            world.hit(shadow_ray, interval(0.001, infinity), world_shadow_rec);
+            hit_record light_rec;
+            chosen_light->hit(shadow_ray, interval(0.001, infinity), light_rec);
+            double epsilon = 1e-8;
+            //std::clog << "time hit world: " << world_shadow_rec.t << " " << "time hit light: " << light_rec.t << std::endl;
+            if (world_shadow_rec.t + epsilon < light_rec.t)
+            {
+                //the ray hit something before it hit the light rec, so is occluded, no nee
+                direct_color = color(0, 0, 0);
+            }else
+            {
+                double pdf = l_sample.p_solid_angle / lights.size();
+                //std::clog << "pdf after dividing by num lights " << pdf << std::endl;
+                //TODO this is just uniform random picking of lights possibly change later
+                direct_color = sample.f * cos_theta * l_sample.emitted / pdf;
+            }
+        }
+
+        std::clog << "direct color: " << direct_color << std::endl;
+        return color_from_emission + direct_color;
     }
 };
 

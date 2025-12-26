@@ -1100,6 +1100,7 @@ CMakeFiles/raytracing.dir/main.cpp.o
  /Users/fayeyu/CLionProjects/raytracing/hittable.h
  /Users/fayeyu/CLionProjects/raytracing/hittable_list.h
  /Users/fayeyu/CLionProjects/raytracing/interval.h
+ /Users/fayeyu/CLionProjects/raytracing/light.h
  /Users/fayeyu/CLionProjects/raytracing/material.h
  /Users/fayeyu/CLionProjects/raytracing/obj_loader.h
  /Users/fayeyu/CLionProjects/raytracing/quad.h

@@ -56,6 +56,18 @@ public:
 
         return true;
     }
+    vec3 get_random_point()
+    {
+        return Q + random_double() * u + random_double() * v;
+    }
+    double get_area()
+    {
+        return cross(u, v).length();
+    }
+    vec3 n()
+    {
+        return normal;
+    }
 private:
     point3 Q;
     vec3 u;

@@ -1099,6 +1099,7 @@ CMakeFiles/raytracing.dir/main.cpp.o: /Users/fayeyu/CLionProjects/raytracing/mai
   /Users/fayeyu/CLionProjects/raytracing/hittable.h \
   /Users/fayeyu/CLionProjects/raytracing/hittable_list.h \
   /Users/fayeyu/CLionProjects/raytracing/interval.h \
+  /Users/fayeyu/CLionProjects/raytracing/light.h \
   /Users/fayeyu/CLionProjects/raytracing/material.h \
   /Users/fayeyu/CLionProjects/raytracing/obj_loader.h \
   /Users/fayeyu/CLionProjects/raytracing/quad.h \
@@ -1687,6 +1688,8 @@ CMakeFiles/raytracing.dir/main.cpp.o: /Users/fayeyu/CLionProjects/raytracing/mai
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__format/unicode.h:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__string/constexpr_c_functions.h:
+
+/Users/fayeyu/CLionProjects/raytracing/light.h:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__std_mbstate_t.h:
 
