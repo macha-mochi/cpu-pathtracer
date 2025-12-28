@@ -5,6 +5,7 @@
 #ifndef BXDF_H
 #define BXDF_H
 #include "fresnel.h"
+#include "hit_record.h"
 
 enum bxdf_flags
 {

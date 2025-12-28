@@ -34,10 +34,10 @@ public:
 
     void render(const hittable& world)
     {
-        std::vector<shared_ptr<light>> lights;
+        hittable_list lights;
         render(world, lights);
     }
-    void render(const hittable& world, const std::vector<shared_ptr<light>>& lights)
+    void render(const hittable& world, const hittable_list& lights)
     {
         initialize();
 
@@ -139,7 +139,7 @@ private:
         return center + (p[0] * defocus_disk_u + p[1] * defocus_disk_v);
     }
 
-    color ray_color(const ray& r, int depth, const hittable& world, const std::vector<shared_ptr<light>>& lights) const
+    color ray_color(const ray& r, int depth, const hittable& world, const hittable_list& lights) const
     {
         if (depth <= 0)
         {
@@ -153,58 +153,80 @@ private:
         {
             return background;
         }
-        /*ray scattered;
-        color attenuation;
-        color color_from_emission = rec.mat->emitted();
-        if (!rec.mat->scatter(r, rec, attenuation,scattered))
-            return color_from_emission; //no scattering going on
-        std::clog << "ray ior: " << r.current_ior() << " new ray ior: " << scattered.current_ior() << std::endl;
-        color color_from_scatter = attenuation * ray_color(scattered, depth-1, world);
-        return color_from_emission + color_from_scatter;*/
 
-        bsdf b = rec.mat->create_bsdf(rec);
-        //std::clog << b.flags_to_string() << std::endl;
-        //std::clog << b.bxdfs.size() << std::endl;
-        vec3 wo = -r.direction();
-        bsdf_sample sample = b.sample(wo);
-        double cos_theta = dot(wo, rec.normal) / (wo.length() * rec.normal.length());
-        ray scattered = ray(rec.p, sample.wi);
-        color color_from_emission = rec.mat->emitted();
-        //std::clog << sample.f << " " << cos_theta << " " << sample.pdf << std::endl;
+        int num_lights = lights.objects.size();
+
         //BSDF sampling
-        color indirect_color = sample.f * cos_theta * ray_color(scattered, depth - 1, world, lights) / sample.pdf;
+        bsdf b = rec.mat->create_bsdf(rec);
+        vec3 wo = -r.direction();
+        bsdf_sample b_sample = b.sample(wo);
+        double cos_theta_x = dot(wo, rec.normal) / (wo.length() * rec.normal.length());
+        ray scattered = ray(rec.p, b_sample.wi);
+        color color_from_emission = rec.mat->emitted();
+        color indirect_color = b_sample.f * cos_theta_x * ray_color(scattered, depth - 1, world, lights) / b_sample.pdf;
+        if (b_sample.is_delta)
+        {
+            //don't nee since it's delta, use bsdf only
+            return color_from_emission + indirect_color;
+        }
+        //calculate bsdf weight in mis
+        hit_record any_light_rec;
+        bool hit_light = lights.hit(scattered, interval(0.001, infinity), any_light_rec);
+        double pb_light = 0;
+        if (hit_light)
+        {
+            hit_record world_shadow_rec;
+            bool occluded = world.hit(scattered, interval(0.001, any_light_rec.t - 1e-8), world_shadow_rec);
+            if (!occluded)
+            {
+                //p_light is nonzero
+                pb_light = 1.0/num_lights * any_light_rec.hit_light->pdf(rec.p, any_light_rec.p);
+            }
+        }
+        double pb_bsdf = b_sample.pdf;
+        double w_bsdf = pb_bsdf / (pb_bsdf + pb_light);
 
         //NEE sampling
-        //NEE
-        std::clog << std::endl;
-        auto& chosen_light = lights[random_int(0, static_cast<int>(lights.size()) - 1)];
+        auto& chosen_light_ptr = lights.objects[random_int(0, num_lights - 1)];
+        auto* chosen_light = dynamic_cast<light*>(chosen_light_ptr.get());
         light_sample l_sample = chosen_light->sample(rec.p);
         color direct_color;
         if (l_sample.p_solid_angle > 0)
         {
-            //std::clog << l_sample.emitted << " " << l_sample.p_solid_angle << std::endl;
             ray shadow_ray = ray(rec.p, l_sample.wi);
+            hit_record chosen_light_rec;
+            chosen_light->hit(shadow_ray, interval(0.001, infinity), chosen_light_rec);
             hit_record world_shadow_rec;
-            world.hit(shadow_ray, interval(0.001, infinity), world_shadow_rec);
-            hit_record light_rec;
-            chosen_light->hit(shadow_ray, interval(0.001, infinity), light_rec);
-            double epsilon = 1e-8;
-            //std::clog << "time hit world: " << world_shadow_rec.t << " " << "time hit light: " << light_rec.t << std::endl;
-            if (world_shadow_rec.t + epsilon < light_rec.t)
+            bool occluded = world.hit(shadow_ray, interval(0.001, chosen_light_rec.t - 1e-8), world_shadow_rec);
+            if (occluded)
             {
                 //the ray hit something before it hit the light rec, so is occluded, no nee
                 direct_color = color(0, 0, 0);
             }else
             {
-                double pdf = l_sample.p_solid_angle / lights.size();
+                double pdf = l_sample.p_solid_angle * 1.0/num_lights;
                 //std::clog << "pdf after dividing by num lights " << pdf << std::endl;
                 //TODO this is just uniform random picking of lights possibly change later
-                direct_color = sample.f * cos_theta * l_sample.emitted / pdf;
+                direct_color = b_sample.f * cos_theta_x * l_sample.emitted / pdf;
             }
         }
+        if (direct_color.near_zero())
+        {
+            //means either p_solid_angle is 0 or the ray was occluded, either way don't do nee
+            return color_from_emission + w_bsdf * indirect_color;
+        }
+        //calculate NEE weight //TODO for point or directional lights, expected contribution for w_light is only from nee since prob that bsdf hits that exact dir is 0
+        double pl_light = l_sample.p_solid_angle * 1.0/num_lights;
+        double pl_bsdf = b.pdf(wo, l_sample.wi);
+        double w_light = pl_light / (pl_light + pl_bsdf);
 
-        std::clog << "direct color: " << direct_color << std::endl;
-        return color_from_emission + direct_color;
+        //std::clog << "bsdf weight: " << w_bsdf << std::endl;
+        //std::clog << "light weight: " << w_light << std::endl;
+
+        //std::clog << "indirect: " << indirect_color << std::endl;
+        //std::clog << "direct: " << direct_color << std::endl;
+
+        return color_from_emission + w_bsdf * indirect_color + w_light * direct_color;
     }
 };
 

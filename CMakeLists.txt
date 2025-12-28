@@ -22,4 +22,5 @@ add_executable(raytracing main.cpp
         triangle.h
         bxdf.h
         fresnel.h
-        light.h)
+        light.h
+        hit_record.h)

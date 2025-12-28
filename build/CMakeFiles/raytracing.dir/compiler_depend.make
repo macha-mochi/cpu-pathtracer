@@ -1096,6 +1096,7 @@ CMakeFiles/raytracing.dir/main.cpp.o: /Users/fayeyu/CLionProjects/raytracing/mai
   /Users/fayeyu/CLionProjects/raytracing/color.h \
   /Users/fayeyu/CLionProjects/raytracing/filesystem.hpp \
   /Users/fayeyu/CLionProjects/raytracing/fresnel.h \
+  /Users/fayeyu/CLionProjects/raytracing/hit_record.h \
   /Users/fayeyu/CLionProjects/raytracing/hittable.h \
   /Users/fayeyu/CLionProjects/raytracing/hittable_list.h \
   /Users/fayeyu/CLionProjects/raytracing/interval.h \
@@ -1120,6 +1121,8 @@ CMakeFiles/raytracing.dir/main.cpp.o: /Users/fayeyu/CLionProjects/raytracing/mai
 /Users/fayeyu/CLionProjects/raytracing/ray.h:
 
 /Users/fayeyu/CLionProjects/raytracing/interval.h:
+
+/Users/fayeyu/CLionProjects/raytracing/hit_record.h:
 
 /Users/fayeyu/CLionProjects/raytracing/fresnel.h:
 

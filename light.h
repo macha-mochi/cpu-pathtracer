@@ -18,7 +18,7 @@ public:
     wi(wi), emitted(e), p_solid_angle(p){};
 };
 
-class light : hittable
+class light : public hittable
 {
 public:
     virtual ~light() = default;
@@ -33,6 +33,7 @@ public:
         //given the shading point, returns a light_sample w the info
         return light_sample();
     }
+    virtual double pdf(const vec3& x, const vec3& y) const = 0;
 };
 
 class quad_light : public light
@@ -42,7 +43,9 @@ public:
 
     bool hit(const ray& r, interval ray_t, hit_record& rec) const override
     {
-        return q->hit(r, ray_t, rec);
+        bool ans = q->hit(r, ray_t, rec);
+        if (ans) rec.hit_light = const_cast<quad_light*>(this);
+        return ans;
     }
 
     aabb bounding_box() const override
@@ -53,7 +56,6 @@ public:
     light_sample sample(const vec3& x) const override
     {
         vec3 y = q->get_random_point();
-        double p_a = 1.0/q->get_area();
         vec3 wi = unit_vector(y-x);
         //use -wi bc wi is from surface to light
         double cos_theta_y = dot(-wi, q->n()); //shouldn't need to divide bc theyre both unit vectors
@@ -62,7 +64,15 @@ public:
             //backface, no light should be reaching the point
             return light_sample(wi, color(0, 0, 0), 0);
         }
-        return light_sample(wi, mat->emitted(), p_a * (x-y).length_squared() / cos_theta_y);
+        return light_sample(wi, mat->emitted(), pdf(x, y));
+    }
+    //x: shading point, y: point on light, but pdf is returned in solid angle, before num_lights accounted for
+    double pdf(const vec3& x, const vec3& y) const override
+    {
+        double p_a = 1.0/q->get_area();
+        vec3 wi = unit_vector(y-x);
+        double cos_theta_y = dot(-wi, q->n()); //shouldn't need to divide bc theyre both unit vectors
+        return p_a * (x-y).length_squared() / cos_theta_y;
     }
 private:
     shared_ptr<quad> q;

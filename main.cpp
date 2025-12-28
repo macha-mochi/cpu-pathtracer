@@ -242,7 +242,7 @@ void simple_light()
 }
 void cornell_box() {
     hittable_list world;
-    std::vector<shared_ptr<light>> lights;
+    hittable_list lights;
 
     auto red   = make_shared<lambertian>(color(.65, .05, .05));
     auto white = make_shared<lambertian>(color(.73, .73, .73));
@@ -255,7 +255,7 @@ void cornell_box() {
     world.add(make_shared<quad>(point3(0,0,0), vec3(0,555,0), vec3(0,0,555), red));
     auto l = make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light_mat);
     world.add(l);
-    lights.push_back(make_shared<quad_light>(l, light_mat));
+    lights.add(make_shared<quad_light>(l, light_mat));
     world.add(make_shared<quad>(point3(0,0,0), vec3(555,0,0), vec3(0,0,555), white));
     world.add(make_shared<quad>(point3(555,555,555), vec3(-555,0,0), vec3(0,0,-555), white));
     world.add(make_shared<quad>(point3(0,0,555), vec3(555,0,0), vec3(0,555,0), white));
@@ -273,18 +273,13 @@ void cornell_box() {
     //world.add(make_shared<sphere>(point3(300, 300, 300), 70, metal_mat));
     //world.add(make_shared<sphere>(point3(450, 300, 300), 70, glass));
 
-    /*shared_ptr<hittable> test_box = box(point3(0, 0, 0), point3(200, 200, 200), white);
-    test_box = make_shared<translate>(test_box, vec3(100, 0, 300));
-    test_box = make_shared<rotate_y>(test_box, 45);
-    world.add(test_box);*/
-
     world = hittable_list(make_shared<bvh_node>(world));
 
     camera cam;
 
     cam.aspect_ratio      = 1.0;
     cam.image_width       = 100; //600
-    cam.samples_per_pixel = 100; //200
+    cam.samples_per_pixel = 250; //200
     cam.max_depth         = 50; //50
     cam.background        = color(0,0,0);
 
