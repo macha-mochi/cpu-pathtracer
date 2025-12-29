@@ -99,6 +99,10 @@ inline vec3 cross(const vec3& u, const vec3& v) {
 inline vec3 unit_vector(const vec3& v) {
     return v / v.length();
 }
+inline vec3 clamp(const vec3& v, interval i)
+{
+    return vec3(i.clamp(v.e[0]), i.clamp(v.e[1]), i.clamp(v.e[2]));
+}
 inline vec3 random_in_unit_disk()
 {
     while (true)

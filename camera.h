@@ -22,6 +22,7 @@ public:
     int samples_per_pixel = 10; //count of random samples for each pixel
     int max_depth = 10; //maximum number of ray bounces into scene
     color background; //scene background color;
+    double radiance_clamp_max = infinity;
 
     double vfov = 90; //vertical view angle (field of view)
     point3 lookfrom = point3(0, 0, 0); //point camera is looking from
@@ -73,6 +74,7 @@ private:
     vec3 u, v, w; //camera frame basis vectors
     vec3 defocus_disk_u; //defocus disk horizontal radius
     vec3 defocus_disk_v; //defocus disk vertical radius
+    interval allowed_radiance;
 
     void initialize()
     {
@@ -115,6 +117,8 @@ private:
         auto defocus_radius = focus_dist * std::tan(degrees_to_radians(defocus_angle/2));
         defocus_disk_u = u * defocus_radius;
         defocus_disk_v = v * defocus_radius;
+
+        allowed_radiance = interval(0, radiance_clamp_max);
     }
     ray get_ray(int i, int j) const
     {
@@ -162,7 +166,7 @@ private:
         bsdf_sample b_sample = b.sample(wo);
         double cos_theta_x = dot(wo, rec.normal) / (wo.length() * rec.normal.length());
         ray scattered = ray(rec.p, b_sample.wi);
-        color color_from_emission = rec.mat->emitted();
+        color color_from_emission = rec.front_face ? rec.mat->emitted() : color(0, 0, 0);
         color indirect_color = b_sample.f * cos_theta_x * ray_color(scattered, depth - 1, world, lights) / b_sample.pdf;
         if (b_sample.is_delta)
         {
@@ -173,18 +177,19 @@ private:
         hit_record any_light_rec;
         bool hit_light = lights.hit(scattered, interval(0.001, infinity), any_light_rec);
         double pb_light = 0;
-        if (hit_light)
+        if (hit_light && any_light_rec.front_face)
         {
             hit_record world_shadow_rec;
             bool occluded = world.hit(scattered, interval(0.001, any_light_rec.t - 1e-8), world_shadow_rec);
             if (!occluded)
             {
                 //p_light is nonzero
-                pb_light = 1.0/num_lights * any_light_rec.hit_light->pdf(rec.p, any_light_rec.p);
+                double temp = any_light_rec.hit_light->pdf(rec.p, any_light_rec.p);
+                pb_light = temp * 1.0/num_lights;
             }
         }
         double pb_bsdf = b_sample.pdf;
-        double w_bsdf = pb_bsdf / (pb_bsdf + pb_light);
+        double w_bsdf = power_heuristic(pb_bsdf, pb_light);
 
         //NEE sampling
         auto& chosen_light_ptr = lights.objects[random_int(0, num_lights - 1)];
@@ -205,7 +210,6 @@ private:
             }else
             {
                 double pdf = l_sample.p_solid_angle * 1.0/num_lights;
-                //std::clog << "pdf after dividing by num lights " << pdf << std::endl;
                 //TODO this is just uniform random picking of lights possibly change later
                 direct_color = b_sample.f * cos_theta_x * l_sample.emitted / pdf;
             }
@@ -218,7 +222,7 @@ private:
         //calculate NEE weight //TODO for point or directional lights, expected contribution for w_light is only from nee since prob that bsdf hits that exact dir is 0
         double pl_light = l_sample.p_solid_angle * 1.0/num_lights;
         double pl_bsdf = b.pdf(wo, l_sample.wi);
-        double w_light = pl_light / (pl_light + pl_bsdf);
+        double w_light = power_heuristic(pl_light, pl_bsdf);
 
         //std::clog << "bsdf weight: " << w_bsdf << std::endl;
         //std::clog << "light weight: " << w_light << std::endl;
@@ -226,7 +230,13 @@ private:
         //std::clog << "indirect: " << indirect_color << std::endl;
         //std::clog << "direct: " << direct_color << std::endl;
 
-        return color_from_emission + w_bsdf * indirect_color + w_light * direct_color;
+        color result = color_from_emission + w_bsdf * indirect_color + w_light * direct_color;
+        return clamp(result, allowed_radiance);
+    }
+    //in the format of (p1)^2 / ((p1)^2 + (p2)^2)
+    static double power_heuristic(double p1, double p2)
+    {
+        return p1 * p1 / (p1 * p1 + p2 * p2);
     }
 };
 

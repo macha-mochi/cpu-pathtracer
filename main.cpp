@@ -247,13 +247,14 @@ void cornell_box() {
     auto red   = make_shared<lambertian>(color(.65, .05, .05));
     auto white = make_shared<lambertian>(color(.73, .73, .73));
     auto green = make_shared<lambertian>(color(.12, .45, .15));
-    auto light_mat = make_shared<diffuse_light>(color(15, 15, 15), color(1.0, 1.0, 1.0));
+    auto light_mat = make_shared<diffuse_light>(color(2, 2, 2), color(1.0, 1.0, 1.0));
     auto metal_mat = make_shared<metal>(color(0.75, 0.75, 0.75), 0);
     auto glass = make_shared<dielectric>(1.5);
 
     world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
     world.add(make_shared<quad>(point3(0,0,0), vec3(0,555,0), vec3(0,0,555), red));
-    auto l = make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light_mat);
+    //auto l = make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light_mat);
+    auto l = make_shared<quad>(point3(278+200, 554, 278+200), vec3(-400,0,0), vec3(0,0,-400), light_mat);
     world.add(l);
     lights.add(make_shared<quad_light>(l, light_mat));
     world.add(make_shared<quad>(point3(0,0,0), vec3(555,0,0), vec3(0,0,555), white));
@@ -278,10 +279,11 @@ void cornell_box() {
     camera cam;
 
     cam.aspect_ratio      = 1.0;
-    cam.image_width       = 100; //600
-    cam.samples_per_pixel = 250; //200
-    cam.max_depth         = 50; //50
+    cam.image_width       = 400; //600
+    cam.samples_per_pixel = 32; //200
+    cam.max_depth         = 3; //50
     cam.background        = color(0,0,0);
+    cam.radiance_clamp_max = 5.0;
 
     cam.vfov     = 40;
     cam.lookfrom = point3(278, 278, -800);

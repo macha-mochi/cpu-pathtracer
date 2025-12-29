@@ -72,6 +72,10 @@ public:
         double p_a = 1.0/q->get_area();
         vec3 wi = unit_vector(y-x);
         double cos_theta_y = dot(-wi, q->n()); //shouldn't need to divide bc theyre both unit vectors
+        if (cos_theta_y <= 0.0) //on the backside of the light or on the exact same plane, which should not be lit
+        {
+            return 0;
+        }
         return p_a * (x-y).length_squared() / cos_theta_y;
     }
 private:
