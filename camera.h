@@ -33,6 +33,8 @@ public:
     double defocus_angle = 0; //Variation angle of rays thru each pixel
     double focus_dist = 10; //distance from camera lookfrom point to plane of perfect focus
 
+    bool russian_roulette_termination = false; //whether the render loop will use rr
+
     void render(const hittable& world)
     {
         hittable_list lights;
@@ -52,11 +54,12 @@ public:
                 for (int sample = 0; sample < samples_per_pixel; sample++)
                 {
                     ray r = get_ray(i, j);
-                    pixel_color+=ray_color(r, max_depth, world, lights); //just a vector3 so we can add
+                    throughput = color(1, 1, 1); //need to reset the throughput before each ray_color call
+                    pixel_color+=ray_color(r, max_depth, world, lights);
                 }
 
                 //pixel_samples_scale is what we need to mult by to average out pixel_color
-                //we average it out to get anti alias
+                //we average it out for monte carlo and anti alias
                 write_color(std::cout, pixel_samples_scale * pixel_color);
             }
         }
@@ -75,6 +78,8 @@ private:
     vec3 defocus_disk_u; //defocus disk horizontal radius
     vec3 defocus_disk_v; //defocus disk vertical radius
     interval allowed_radiance;
+    interval russian_roulette_clamp;
+    color throughput;
 
     void initialize()
     {
@@ -119,6 +124,7 @@ private:
         defocus_disk_v = v * defocus_radius;
 
         allowed_radiance = interval(0, radiance_clamp_max);
+        russian_roulette_clamp = interval(0.05, 1);
     }
     ray get_ray(int i, int j) const
     {
@@ -143,7 +149,7 @@ private:
         return center + (p[0] * defocus_disk_u + p[1] * defocus_disk_v);
     }
 
-    color ray_color(const ray& r, int depth, const hittable& world, const hittable_list& lights) const
+    color ray_color(const ray& r, int depth, const hittable& world, const hittable_list& lights)
     {
         if (depth <= 0)
         {
@@ -167,7 +173,24 @@ private:
         double cos_theta_x = dot(wo, rec.normal) / (wo.length() * rec.normal.length());
         ray scattered = ray(rec.p, b_sample.wi);
         color color_from_emission = rec.front_face ? rec.mat->emitted() : color(0, 0, 0);
-        color indirect_color = b_sample.f * cos_theta_x * ray_color(scattered, depth - 1, world, lights) / b_sample.pdf;
+        color throughput_change = (b_sample.f * cos_theta_x / b_sample.pdf);
+        throughput = throughput * throughput_change;
+        color indirect_color;
+        if (russian_roulette_termination && max_depth - depth >= 4)
+        {
+            double survive_p = std::max(throughput.x(), std::max(throughput.y(), throughput.z()));
+            survive_p = russian_roulette_clamp.clamp(survive_p);
+            if (random_double(0, 1) <= survive_p) //survive
+            {
+                indirect_color = throughput_change * ray_color(scattered, depth - 1, world, lights) / survive_p;
+            }else
+            {
+                indirect_color = color(0, 0, 0);
+            }
+        }else
+        {
+            indirect_color = b_sample.f * cos_theta_x * ray_color(scattered, depth - 1, world, lights) / b_sample.pdf;
+        }
         if (b_sample.is_delta)
         {
             //don't nee since it's delta, use bsdf only
