@@ -35,13 +35,13 @@ inline double random_double()
     static std::uniform_real_distribution<> distribution(0.0, 1.0);
     return distribution(generator);
 }
+//returns a random real in [min, max)
 inline double random_double(double min, double max){
-    //returns a random real in [min, max)
     return min + (max-min)*random_double();
 }
+//returns a random int in [min, max]
 inline int random_int(int min, int max)
 {
-    //returns a random int in [min, max]
     static std::mt19937 generator (std::random_device{}());
     static std::uniform_int_distribution<> distribution(min, max);
     return distribution(generator);

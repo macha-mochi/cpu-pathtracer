@@ -168,29 +168,40 @@ private:
 
         //BSDF sampling
         bsdf b = rec.mat->create_bsdf(rec);
-        vec3 wo = -r.direction();
+        vec3 wo = unit_vector(-r.direction());
         bsdf_sample b_sample = b.sample(wo);
-        double cos_theta_x = dot(wo, rec.normal) / (wo.length() * rec.normal.length());
-        ray scattered = ray(rec.p, b_sample.wi);
+        vec3 wi = b_sample.wi; //is in the same hemisphere as the normal
+        double cos_theta_x = dot(wi, rec.normal);
+        ray scattered = ray(rec.p, wi);
         color color_from_emission = rec.front_face ? rec.mat->emitted() : color(0, 0, 0);
         color throughput_change = (b_sample.f * cos_theta_x / b_sample.pdf);
         throughput = throughput * throughput_change;
         color indirect_color;
+        color next;
         if (russian_roulette_termination && max_depth - depth >= 4)
         {
             double survive_p = std::max(throughput.x(), std::max(throughput.y(), throughput.z()));
             survive_p = russian_roulette_clamp.clamp(survive_p);
             if (random_double(0, 1) <= survive_p) //survive
             {
-                indirect_color = throughput_change * ray_color(scattered, depth - 1, world, lights) / survive_p;
+                next = ray_color(scattered, depth - 1, world, lights);
+                indirect_color = throughput_change * next / survive_p;
             }else
             {
                 indirect_color = color(0, 0, 0);
             }
         }else
         {
-            indirect_color = b_sample.f * cos_theta_x * ray_color(scattered, depth - 1, world, lights) / b_sample.pdf;
+            next = ray_color(scattered, depth - 1, world, lights);
+            indirect_color = throughput_change * next;
         }
+
+        //debugging bsdf
+        //std::clog << "f: " << b_sample.f << " cos: " << cos_theta_x << " pdf: " << b_sample.pdf << std::endl;
+        //std::clog << "throughput_change: " << throughput_change << " next bounce returned: " << next << std::endl;
+        //std::clog << "color_from_emission: " << color_from_emission << " indirect_color: " << indirect_color << std::endl;
+        //return color_from_emission + indirect_color;
+
         if (b_sample.is_delta)
         {
             //don't nee since it's delta, use bsdf only

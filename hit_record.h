@@ -12,7 +12,7 @@ class material;
 class hit_record{
 public:
     point3 p;
-    vec3 normal;
+    vec3 normal; //assumed to be unit
     shared_ptr<material> mat;
     double t;
     bool front_face;

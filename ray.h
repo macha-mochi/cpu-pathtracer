@@ -11,6 +11,7 @@ class ray {
 public:
     ray() {}
 
+    //direction assumed to be unit
     ray(const point3& origin, const vec3& direction) : orig(origin), dir(direction)
     {
         eta = 1.0; //for air
