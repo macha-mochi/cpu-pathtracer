@@ -22,7 +22,6 @@ public:
     int samples_per_pixel = 10; //count of random samples for each pixel
     int max_depth = 10; //maximum number of ray bounces into scene
     color background; //scene background color;
-    double radiance_clamp_max = infinity;
 
     double vfov = 90; //vertical view angle (field of view)
     point3 lookfrom = point3(0, 0, 0); //point camera is looking from
@@ -54,8 +53,8 @@ public:
                 for (int sample = 0; sample < samples_per_pixel; sample++)
                 {
                     ray r = get_ray(i, j);
-                    throughput = color(1, 1, 1); //need to reset the throughput before each ray_color call
-                    pixel_color+=ray_color(r, max_depth, world, lights);
+                    //throughput = color(1, 1, 1); //need to reset the throughput before each ray_color call
+                    pixel_color+=ray_color_iter(r, max_depth, world, lights);
                 }
 
                 //pixel_samples_scale is what we need to mult by to average out pixel_color
@@ -77,7 +76,6 @@ private:
     vec3 u, v, w; //camera frame basis vectors
     vec3 defocus_disk_u; //defocus disk horizontal radius
     vec3 defocus_disk_v; //defocus disk vertical radius
-    interval allowed_radiance;
     interval russian_roulette_clamp;
     color throughput;
 
@@ -123,7 +121,6 @@ private:
         defocus_disk_u = u * defocus_radius;
         defocus_disk_v = v * defocus_radius;
 
-        allowed_radiance = interval(0, radiance_clamp_max);
         russian_roulette_clamp = interval(0.05, 1);
     }
     ray get_ray(int i, int j) const
@@ -147,6 +144,95 @@ private:
         //Returns a random point in the camera defocus disk
         auto p = random_in_unit_disk();
         return center + (p[0] * defocus_disk_u + p[1] * defocus_disk_v);
+    }
+
+    color ray_color_iter(const ray& camera_ray, int depth, const hittable& world, const hittable_list& lights)
+    {
+        color throughput = color(1, 1, 1);
+        color outgoing_radiance = color(0, 0, 0);
+        int num_lights = lights.objects.size();
+
+        ray r = camera_ray;
+        color f_s;
+        double cos_theta_i;
+        double pdf_b;
+        for (int i = 0; i < depth; i++)
+        {
+            hit_record rec;
+            if (!world.hit(r, interval(0.001, infinity), rec))
+            {
+                outgoing_radiance += (throughput * background);
+                break;
+            } //otherwise, we hit something
+
+            if (russian_roulette_termination && i >= 4)
+            {
+                double survive_p = std::max(throughput.x(), std::max(throughput.y(), throughput.z()));
+                survive_p = russian_roulette_clamp.clamp(survive_p);
+                if (random_double(0, 1) <= survive_p) //survive
+                {
+                    throughput *= 1 / survive_p;
+                }else break;
+            }
+
+            if (i != 0) //not camera ray
+            {
+                double w_bsdf = 1;
+                if (rec.hit_light && rec.front_face)
+                {
+                    double pb_bsdf = pdf_b;
+                    double pb_light = rec.light_source->pdf(r.origin(), rec.p);
+                    pb_light*=1.0/num_lights;
+                    w_bsdf = power_heuristic(pb_bsdf, pb_light);
+                } //if didn't hit smth, w_bsdf stays at 1
+                throughput = throughput * w_bsdf * (f_s * cos_theta_i / pdf_b);
+            }
+
+            //Le term
+            color color_from_emission = rec.front_face ? rec.mat->emitted() : color(0, 0, 0);
+            outgoing_radiance += throughput * color_from_emission;
+            if (i == depth-1) break; //no need to sample this bsdf and get a wi bc your path ends here
+
+            //sample BSDF (but contribution will actually be added next time loop runs)
+            bsdf b = rec.mat->create_bsdf(rec);
+            vec3 wo = unit_vector(-r.direction());
+            bsdf_sample b_sample = b.sample(wo);
+            vec3 wi = b_sample.wi; //is in the same hemisphere as the normal
+            f_s = b_sample.f;
+            cos_theta_i = dot(wi, rec.normal);
+            pdf_b = b_sample.pdf;
+            r = ray(rec.p, wi);
+            if (b_sample.is_delta) continue; //don't nee since it's delta, use bsdf only
+
+            //sample a direct light source via NEE
+            auto& chosen_light_ptr = lights.objects[random_int(0, num_lights - 1)];
+            auto* chosen_light = dynamic_cast<light*>(chosen_light_ptr.get());
+            light_sample l_sample = chosen_light->sample(rec.p);
+            color direct_color;
+            if (l_sample.p_solid_angle <= 0) continue; //no nee contribution since probabilistically impossible
+            ray shadow_ray = ray(rec.p, l_sample.wi);
+            hit_record chosen_light_rec;
+            chosen_light->hit(shadow_ray, interval(0.001, infinity), chosen_light_rec);
+            hit_record world_shadow_rec;
+            bool occluded = world.hit(shadow_ray, interval(0.001, chosen_light_rec.t - 1e-8), world_shadow_rec);
+            if (occluded) continue; //no nee contribution since the ray hit smth before it could reach the light source
+            double pdf_l = l_sample.p_solid_angle * 1.0/num_lights;
+            //TODO this is just uniform random picking of lights possibly change later
+            direct_color = f_s * cos_theta_i * l_sample.emitted / pdf_l;
+
+            /*color f_s_l = b.f_s(wo, l_sample.wi);
+            double cos_theta_i_l = dot(l_sample.wi, rec.normal);
+            direct_color = f_s_l * cos_theta_i_l * l_sample.emitted / pdf_l;*/
+
+            //calculate NEE weight //TODO for point or directional lights, expected contribution for w_light is only from nee since prob that bsdf hits that exact dir is 0
+            double pl_light = l_sample.p_solid_angle * 1.0/num_lights;
+            double pl_bsdf = b.pdf(wo, l_sample.wi);
+            double w_light = power_heuristic(pl_light, pl_bsdf);
+            outgoing_radiance += throughput * w_light * direct_color;
+
+            break;
+        }
+        return outgoing_radiance;
     }
 
     color ray_color(const ray& r, int depth, const hittable& world, const hittable_list& lights)
@@ -218,7 +304,7 @@ private:
             if (!occluded)
             {
                 //p_light is nonzero
-                double temp = any_light_rec.hit_light->pdf(rec.p, any_light_rec.p);
+                double temp = any_light_rec.light_source->pdf(rec.p, any_light_rec.p);
                 pb_light = temp * 1.0/num_lights;
             }
         }
@@ -265,7 +351,7 @@ private:
         //std::clog << "direct: " << direct_color << std::endl;
 
         color result = color_from_emission + w_bsdf * indirect_color + w_light * direct_color;
-        return clamp(result, allowed_radiance);
+        return result;
     }
     //in the format of (p1)^2 / ((p1)^2 + (p2)^2)
     static double power_heuristic(double p1, double p2)

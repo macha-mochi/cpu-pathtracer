@@ -280,10 +280,9 @@ void cornell_box() {
 
     cam.aspect_ratio      = 1.0;
     cam.image_width       = 256;
-    cam.samples_per_pixel = 64;
-    cam.max_depth         = 6;
+    cam.samples_per_pixel = 32;
+    cam.max_depth         = 3;
     cam.background        = color(0,0,0);
-    cam.radiance_clamp_max = 24.0;
 
     cam.vfov     = 40;
     cam.lookfrom = point3(278, 278, -800);

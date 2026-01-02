@@ -44,7 +44,11 @@ public:
     bool hit(const ray& r, interval ray_t, hit_record& rec) const override
     {
         bool ans = q->hit(r, ray_t, rec);
-        if (ans) rec.hit_light = const_cast<quad_light*>(this);
+        if (ans)
+        {
+            rec.hit_light = true;
+            rec.light_source = const_cast<quad_light*>(this);
+        }
         return ans;
     }
 
