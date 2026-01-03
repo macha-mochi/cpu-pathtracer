@@ -63,9 +63,9 @@ public:
         vec3 wi = unit_vector(y-x);
         //use -wi bc wi is from surface to light
         double cos_theta_y = dot(-wi, q->n()); //shouldn't need to divide bc theyre both unit vectors
-        if (cos_theta_y < 0)
+        if (cos_theta_y <= 0.0)
         {
-            //backface, no light should be reaching the point
+            //backface or parallel, no light should be reaching the point
             return light_sample(wi, color(0, 0, 0), 0);
         }
         return light_sample(wi, mat->emitted(), pdf(x, y));

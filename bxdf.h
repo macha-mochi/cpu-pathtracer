@@ -175,7 +175,7 @@ public:
     {
         bxdfs.push_back(std::make_unique<T>(std::forward<Args>(args)...));
     }
-    //the physically correct f_s from each bxdf
+    //the physically correct f_s from each bxdf, takes wo and wi in RENDER SPACE
     color f_s(const vec3& wo, const vec3& wi) const
     {
         //NOTE TO SELF: might have a problem with reflection/transmission if u need to filter out certain non-delta lobes
@@ -188,6 +188,7 @@ public:
         return result;
     }
     //the marginal pdf for wi, equal to sum(i = 1 -> k) Pr(choosing kth lobe) * Pr(getting wi from the kth lobe)
+    //takes wo and wi in RENDER SPACE
     double pdf(const vec3& wo, const vec3& wi) const
     {
         double w_k = 1.0/bxdfs.size(); //TODO change to not be uniform later

@@ -53,7 +53,7 @@ public:
                 for (int sample = 0; sample < samples_per_pixel; sample++)
                 {
                     ray r = get_ray(i, j);
-                    //throughput = color(1, 1, 1); //need to reset the throughput before each ray_color call
+                    //throughput = color(1, 1, 1); //need to reset the throughput before each ray_color (RECURSIVE) call
                     pixel_color+=ray_color_iter(r, max_depth, world, lights);
                 }
 
@@ -178,12 +178,14 @@ private:
             if (i != 0) //not camera ray
             {
                 double w_bsdf = 1;
+                std::clog << "hit light: " << rec.hit_light << " front face: " << rec.front_face << std::endl;
                 if (rec.hit_light && rec.front_face)
                 {
                     double pb_bsdf = pdf_b;
                     double pb_light = rec.light_source->pdf(r.origin(), rec.p);
                     pb_light*=1.0/num_lights;
                     w_bsdf = power_heuristic(pb_bsdf, pb_light);
+                    std::clog << "p bsdf: " << pb_bsdf << " p light: " << " w bsdf: " << w_bsdf << std::endl;
                 } //if didn't hit smth, w_bsdf stays at 1
                 throughput = throughput * w_bsdf * (f_s * cos_theta_i / pdf_b);
             }
@@ -191,7 +193,6 @@ private:
             //Le term
             color color_from_emission = rec.front_face ? rec.mat->emitted() : color(0, 0, 0);
             outgoing_radiance += throughput * color_from_emission;
-            if (i == depth-1) break; //no need to sample this bsdf and get a wi bc your path ends here
 
             //sample BSDF (but contribution will actually be added next time loop runs)
             bsdf b = rec.mat->create_bsdf(rec);
@@ -218,19 +219,15 @@ private:
             if (occluded) continue; //no nee contribution since the ray hit smth before it could reach the light source
             double pdf_l = l_sample.p_solid_angle * 1.0/num_lights;
             //TODO this is just uniform random picking of lights possibly change later
-            direct_color = f_s * cos_theta_i * l_sample.emitted / pdf_l;
-
-            /*color f_s_l = b.f_s(wo, l_sample.wi);
-            double cos_theta_i_l = dot(l_sample.wi, rec.normal);
-            direct_color = f_s_l * cos_theta_i_l * l_sample.emitted / pdf_l;*/
+            color f_s_l = b.f_s(b.local_to_render(wo), b.local_to_render(l_sample.wi));
+            double cos_theta_l = dot(rec.normal, l_sample.wi);
+            direct_color = f_s_l * cos_theta_l * l_sample.emitted / pdf_l;
 
             //calculate NEE weight //TODO for point or directional lights, expected contribution for w_light is only from nee since prob that bsdf hits that exact dir is 0
             double pl_light = l_sample.p_solid_angle * 1.0/num_lights;
             double pl_bsdf = b.pdf(wo, l_sample.wi);
             double w_light = power_heuristic(pl_light, pl_bsdf);
             outgoing_radiance += throughput * w_light * direct_color;
-
-            break;
         }
         return outgoing_radiance;
     }
@@ -331,7 +328,9 @@ private:
             {
                 double pdf = l_sample.p_solid_angle * 1.0/num_lights;
                 //TODO this is just uniform random picking of lights possibly change later
-                direct_color = b_sample.f * cos_theta_x * l_sample.emitted / pdf;
+                color f_s_l = b.f_s(b.local_to_render(wo), b.local_to_render(l_sample.wi));
+                double cos_theta_l = dot(rec.normal, l_sample.wi);
+                direct_color = f_s_l * cos_theta_l * l_sample.emitted / pdf;
             }
         }
         if (direct_color.near_zero())
