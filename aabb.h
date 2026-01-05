@@ -75,6 +75,12 @@ public:
     {
         return {(x.min + x.max)/2, (y.min + y.max)/2, (z.min + z.max)/2};
     }
+    std::string to_string() const
+    {
+        return "X: " + std::to_string(x.size()) +
+            " | Y: " + std::to_string(y.size()) +
+                " | Z: " + std::to_string(z.size());
+    }
 private:
     void pad_to_minimum()
     {

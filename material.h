@@ -28,6 +28,7 @@ public:
     {
         return color(0, 0, 0); //default emit is black
     }
+    virtual std::string to_string() const = 0;
 };
 
 class lambertian : public material
@@ -62,6 +63,10 @@ public:
         b.add<lambertian_reflection>(albedo);
         return b;
     }
+    std::string to_string() const override
+    {
+        return "Lambertian with albedo " + albedo.to_string();
+    }
 private:
     color albedo;
 };
@@ -94,6 +99,10 @@ public:
         */
         return 1.0;
     }
+    std::string to_string() const override
+    {
+        return "Metal";
+    }
 
 private:
     color albedo;
@@ -104,6 +113,11 @@ class dielectric : public material
 {
 public:
     dielectric(double refraction_index) : refraction_index(refraction_index) {}
+
+    std::string to_string() const override
+    {
+        return "Dielectric";
+    }
 
     bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const override
     {
@@ -229,6 +243,11 @@ public:
     color emitted() const override
     {
         return emit;
+    }
+
+    std::string to_string() const override
+    {
+        return "Diffuse light";
     }
 private:
     color emit;

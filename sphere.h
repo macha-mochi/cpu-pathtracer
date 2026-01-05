@@ -52,7 +52,11 @@ public:
 
         return true;
     }
-    aabb bounding_box() const override {return bbox;};
+    aabb bounding_box() const override {return bbox;}
+    std::string to_string() const override
+    {
+        return "Sphere | Center: " + center.to_string() + " | Radius: " + std::to_string(radius) + " | Material: " + mat->to_string();
+    }
 private:
     point3 center;
     double radius;

@@ -16,6 +16,8 @@ public:
     virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;
 
     virtual aabb bounding_box() const = 0;
+
+    virtual std::string to_string() const = 0;
 };
 class translate : public hittable
 {
@@ -41,6 +43,10 @@ class translate : public hittable
     {
         return bbox;
     }
+    std::string to_string() const override
+    {
+        return "Base: " + object->to_string() + " | Offset by: " + offset.to_string();
+    }
 private:
     shared_ptr<hittable> object;
     vec3 offset;
@@ -49,7 +55,7 @@ private:
 class rotate_y : public hittable
 {
 public:
-    rotate_y(shared_ptr<hittable> p, double angle) : object(p)
+    rotate_y(shared_ptr<hittable> p, double angle) : object(p), theta(angle)
     {
         auto radians = degrees_to_radians(angle);
         sin_theta = std::sin(radians);
@@ -71,8 +77,8 @@ public:
                 {
                     //runs thru every combo of max and min on the three axes
                     auto x = i*bbox.x.max + (1-i)*bbox.x.min;
-                    auto y = i*bbox.y.max + (1-i)*bbox.y.min;
-                    auto z = i*bbox.z.max + (1-i)*bbox.z.min;
+                    auto y = j*bbox.y.max + (1-j)*bbox.y.min;
+                    auto z = k*bbox.z.max + (1-k)*bbox.z.min;
 
                     auto newx = cos_theta*x + sin_theta*z;
                     auto newz = -sin_theta*x + cos_theta*z;
@@ -134,8 +140,13 @@ public:
     {
         return bbox;
     }
+    std::string to_string() const override
+    {
+        return "Base: " + object->to_string() + " | Rotated by " + std::to_string(theta) + " around y axis";
+    }
 private:
     shared_ptr<hittable> object;
+    double theta;
     double sin_theta;
     double cos_theta;
     aabb bbox;

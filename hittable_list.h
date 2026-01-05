@@ -41,6 +41,16 @@ public:
         return hit_anything;
     }
     aabb bounding_box() const override{ return bbox;}
+
+    std::string to_string() const override
+    {
+        std::string s = "Hittable List Containing: \n";
+        for (auto& o : objects)
+        {
+            s = s + o->to_string() + "\n";
+        }
+        return s;
+    }
 private:
     aabb bbox;
 };

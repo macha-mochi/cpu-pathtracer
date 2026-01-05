@@ -253,11 +253,16 @@ void cornell_box() {
 
     world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
     world.add(make_shared<quad>(point3(0,0,0), vec3(0,555,0), vec3(0,0,555), red));
-    auto l = make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light_mat);
-    //auto l = make_shared<quad>(point3(278+200, 554, 278+200), vec3(-400,0,0), vec3(0,0,-400), light_mat);
-    auto ql = make_shared<quad_light>(l, light_mat);
-    world.add(ql);
-    lights.add(ql);
+    //auto small_l = make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light_mat);
+    //auto big_l = make_shared<quad>(point3(278+200, 554, 278+200), vec3(-400,0,0), vec3(0,0,-400), light_mat);
+    auto l1 = make_shared<quad>(point3(443, 554, 432), vec3(-80,0,0), vec3(0,0,-80), light_mat);
+    auto l2 = make_shared<quad>(point3(143, 554, 132), vec3(-80,0,0), vec3(0,0,-80), light_mat);
+    auto ql1 = make_shared<quad_light>(l1, light_mat);
+    auto ql2 = make_shared<quad_light>(l2, light_mat);
+    world.add(ql1);
+    world.add(ql2);
+    lights.add(ql1);
+    lights.add(ql2);
     world.add(make_shared<quad>(point3(0,0,0), vec3(555,0,0), vec3(0,0,555), white));
     world.add(make_shared<quad>(point3(555,555,555), vec3(-555,0,0), vec3(0,0,-555), white));
     world.add(make_shared<quad>(point3(0,0,555), vec3(555,0,0), vec3(0,555,0), white));
@@ -281,9 +286,10 @@ void cornell_box() {
 
     cam.aspect_ratio      = 1.0;
     cam.image_width       = 256;
-    cam.samples_per_pixel = 32;
+    cam.samples_per_pixel = 16;
     cam.max_depth         = 3;
-    cam.background        = color(0,0,0);
+    //cam.background        = color(0.5,0.5,0.8);
+    cam.background = color(0, 0, 0);
 
     cam.vfov     = 40;
     cam.lookfrom = point3(278, 278, -800);
@@ -294,6 +300,7 @@ void cornell_box() {
     cam.defocus_angle = 0;
     cam.russian_roulette_termination = false;
 
+    //std::cout << world.to_string() << std::endl;
     cam.render(world, lights);
 }
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.

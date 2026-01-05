@@ -31,9 +31,10 @@ inline double random_double()
     //returns a random real in [0, 1)
     //return std::rand() / (RAND_MAX + 1.0);
 
-    static std::mt19937 generator (std::random_device{}());
-    static std::uniform_real_distribution<> distribution(0.0, 1.0);
-    return distribution(generator);
+    static std::random_device rd;
+    static std::mt19937 generator (rd());
+    static std::uniform_real_distribution<> distr_double(0.0, 1.0);
+    return distr_double(generator);
 }
 //returns a random real in [min, max)
 inline double random_double(double min, double max){
@@ -42,9 +43,10 @@ inline double random_double(double min, double max){
 //returns a random int in [min, max]
 inline int random_int(int min, int max)
 {
-    static std::mt19937 generator (std::random_device{}());
-    static std::uniform_int_distribution<> distribution(min, max);
-    return distribution(generator);
+    static std::random_device rd;
+    static std::mt19937 generator (rd());
+    std::uniform_int_distribution<> distr_int(min, max);
+    return distr_int(generator);
 }
 //common headers
 #include "color.h"

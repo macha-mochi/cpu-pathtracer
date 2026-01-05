@@ -175,29 +175,18 @@ public:
     {
         bxdfs.push_back(std::make_unique<T>(std::forward<Args>(args)...));
     }
-    //the physically correct f_s from each bxdf, takes wo and wi in RENDER SPACE
+    //the physically correct f_s from each bxdf, takes wo and wi in WORLD SPACE, to be called for mis
     color f_s(const vec3& wo, const vec3& wi) const
     {
         //NOTE TO SELF: might have a problem with reflection/transmission if u need to filter out certain non-delta lobes
         //or if its in the wrong hemisphere or smth
-        color result = color(0, 0, 0);
-        for (const auto & bxdf : bxdfs)
-        {
-            result+=bxdf->f_s(wo, wi); //if is delta, this will be 0 so issok
-        }
-        return result;
+        return f_s_render(local_to_render(wo), local_to_render(wi));
     }
     //the marginal pdf for wi, equal to sum(i = 1 -> k) Pr(choosing kth lobe) * Pr(getting wi from the kth lobe)
-    //takes wo and wi in RENDER SPACE
+    //takes wo and wi in WORLD SPACE, to be called for mis
     double pdf(const vec3& wo, const vec3& wi) const
     {
-        double w_k = 1.0/bxdfs.size(); //TODO change to not be uniform later
-        double result = 0.0;
-        for (const auto & bxdf : bxdfs)
-        {
-            result+=w_k * bxdf->pdf(wo, wi); //if is delta, this will be 0 so issok
-        }
-        return result;
+        return pdf_render(local_to_render(wo), local_to_render(wi));
     }
     //assumes wo is a unit vector in world space
     bsdf_sample sample(const vec3& wo_world) const
@@ -213,7 +202,7 @@ public:
             return sample_for_dir; //if it's a delta distribution don't add up any other bxdfs into f and pdf
         }
         vec3 wi_world = render_to_local(wi);
-        return bsdf_sample(wi_world, f_s(wo, wi), pdf(wo, wi), false);
+        return bsdf_sample(wi_world, f_s_render(wo, wi), pdf_render(wo, wi), false);
     }
     vec3 local_to_render(const vec3& v_local) const
     {
@@ -240,6 +229,30 @@ private:
     //an orthonormal basis in world space at the hit_record point, with up = hit_rec.normal
     vec3 t1;
     vec3 t2;
+    //the physically correct f_s from each bxdf, takes wo and wi in RENDER SPACE
+    color f_s_render(const vec3& wo, const vec3& wi) const
+    {
+        //NOTE TO SELF: might have a problem with reflection/transmission if u need to filter out certain non-delta lobes
+        //or if its in the wrong hemisphere or smth
+        color result = color(0, 0, 0);
+        for (const auto & bxdf : bxdfs)
+        {
+            result+=bxdf->f_s(wo, wi); //if is delta, this will be 0 so issok
+        }
+        return result;
+    }
+    //the marginal pdf for wi, equal to sum(i = 1 -> k) Pr(choosing kth lobe) * Pr(getting wi from the kth lobe)
+    //takes wo and wi in RENDER SPACE
+    double pdf_render(const vec3& wo, const vec3& wi) const
+    {
+        double w_k = 1.0/bxdfs.size(); //TODO change to not be uniform later
+        double result = 0.0;
+        for (const auto & bxdf : bxdfs)
+        {
+            result+=w_k * bxdf->pdf(wo, wi); //if is delta, this will be 0 so issok
+        }
+        return result;
+    }
 };
 
 #endif //BXDF_H

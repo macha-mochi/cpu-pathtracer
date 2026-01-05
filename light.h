@@ -21,11 +21,11 @@ public:
 class light : public hittable
 {
 public:
-    virtual ~light() = default;
+    bool hit(const ray& r, interval ray_t, hit_record& rec) const override = 0;
 
-    virtual bool hit(const ray& r, interval ray_t, hit_record& rec) const = 0;
+    aabb bounding_box() const override = 0;
 
-    virtual aabb bounding_box() const = 0;
+    std::string to_string() const override{ return "Default light base class";}
 
     //samples a random point on the light
     virtual light_sample sample(const vec3& x) const
@@ -81,6 +81,9 @@ public:
             return 0;
         }
         return p_a * (x-y).length_squared() / cos_theta_y;
+    }
+    std::string to_string() const override{
+        return "Quad light | Quad: \n" + q->to_string() + "\nEmit: " + mat->emitted().to_string();
     }
 private:
     shared_ptr<quad> q;

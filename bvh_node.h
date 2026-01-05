@@ -16,7 +16,7 @@ class bvh_node : public hittable
     {
         //Build the bounding box of the span of source objects
         bbox = aabb::empty;
-        for (size_t object_index = start; object_index<end; object_index++)
+        for (size_t object_index = start; object_index < end; object_index++)
         {
             bbox = aabb(bbox, objects[object_index]->bounding_box());
         }
@@ -97,11 +97,16 @@ class bvh_node : public hittable
 
         bool hit_left = left->hit(r, ray_t, rec);
         //if something got hit on the left, we see if there was smth on the right that would have been hit first
-        bool hit_right = right->hit(r, interval(ray_t.min, hit_left ? rec.t : ray_t.max), rec);
+        bool hit_right = right->hit(r, interval(ray_t.min, hit_left ? rec.t - 1e-8 : ray_t.max), rec);
 
         return hit_left || hit_right;
     }
-    aabb bounding_box() const override {return bbox;};
+    aabb bounding_box() const override {return bbox;}
+    std::string to_string() const override
+    {
+        std::string s = "bvh node overall bounding box: [" + bbox.to_string() + "] \n";
+        return s + "Left: \n" + left->to_string() + "\nRight: \n" + right->to_string();
+    }
 private:
     shared_ptr<hittable> left;
     shared_ptr<hittable> right;

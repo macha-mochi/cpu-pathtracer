@@ -158,13 +158,6 @@ private:
         double pdf_b;
         for (int i = 0; i < depth; i++)
         {
-            hit_record rec;
-            if (!world.hit(r, interval(0.001, infinity), rec))
-            {
-                outgoing_radiance += (throughput * background);
-                break;
-            } //otherwise, we hit something
-
             if (russian_roulette_termination && i >= 4)
             {
                 double survive_p = std::max(throughput.x(), std::max(throughput.y(), throughput.z()));
@@ -175,19 +168,31 @@ private:
                 }else break;
             }
 
-            if (i != 0) //not camera ray
+            hit_record rec;
+            bool hit_anything = world.hit(r, interval(0.001, infinity), rec);
+            /*if (hit_anything)
+            {
+                return 0.5* (rec.normal + vec3(1, 1, 1));
+            }else{ return color(0, 0, 0);}*/
+
+            if (i != 0) //not camera ray and we hit something, update throughput
             {
                 double w_bsdf = 1;
-                std::clog << "hit light: " << rec.hit_light << " front face: " << rec.front_face << std::endl;
-                if (rec.hit_light && rec.front_face)
+                if (hit_anything && rec.hit_light && rec.front_face)
                 {
                     double pb_bsdf = pdf_b;
                     double pb_light = rec.light_source->pdf(r.origin(), rec.p);
                     pb_light*=1.0/num_lights;
                     w_bsdf = power_heuristic(pb_bsdf, pb_light);
-                    std::clog << "p bsdf: " << pb_bsdf << " p light: " << " w bsdf: " << w_bsdf << std::endl;
-                } //if didn't hit smth, w_bsdf stays at 1
+                } //if didn't hit a light on the emitting side, w_bsdf stays at 1
+                //w_bsdf = 1; //TODO REMOVE THIS WAS FOR DEBUGGING
                 throughput = throughput * w_bsdf * (f_s * cos_theta_i / pdf_b);
+            }
+
+            if (!hit_anything)
+            {
+                outgoing_radiance += (throughput * background);
+                break;
             }
 
             //Le term
@@ -206,7 +211,8 @@ private:
             if (b_sample.is_delta) continue; //don't nee since it's delta, use bsdf only
 
             //sample a direct light source via NEE
-            auto& chosen_light_ptr = lights.objects[random_int(0, num_lights - 1)];
+            int light_index = random_int(0, num_lights - 1);
+            auto& chosen_light_ptr = lights.objects[light_index];
             auto* chosen_light = dynamic_cast<light*>(chosen_light_ptr.get());
             light_sample l_sample = chosen_light->sample(rec.p);
             color direct_color;
@@ -219,7 +225,7 @@ private:
             if (occluded) continue; //no nee contribution since the ray hit smth before it could reach the light source
             double pdf_l = l_sample.p_solid_angle * 1.0/num_lights;
             //TODO this is just uniform random picking of lights possibly change later
-            color f_s_l = b.f_s(b.local_to_render(wo), b.local_to_render(l_sample.wi));
+            color f_s_l = b.f_s(wo, l_sample.wi);
             double cos_theta_l = dot(rec.normal, l_sample.wi);
             direct_color = f_s_l * cos_theta_l * l_sample.emitted / pdf_l;
 
@@ -328,7 +334,7 @@ private:
             {
                 double pdf = l_sample.p_solid_angle * 1.0/num_lights;
                 //TODO this is just uniform random picking of lights possibly change later
-                color f_s_l = b.f_s(b.local_to_render(wo), b.local_to_render(l_sample.wi));
+                color f_s_l = b.f_s(wo, l_sample.wi);
                 double cos_theta_l = dot(rec.normal, l_sample.wi);
                 direct_color = f_s_l * cos_theta_l * l_sample.emitted / pdf;
             }

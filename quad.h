@@ -56,6 +56,10 @@ public:
 
         return true;
     }
+    std::string to_string() const override
+    {
+        return "Quad | Q: " + Q.to_string() + " | u: " + u.to_string() + " | v: " + v.to_string() + " | Material: " + mat->to_string();
+    }
     vec3 get_random_point()
     {
         return Q + random_double() * u + random_double() * v;

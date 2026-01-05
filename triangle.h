@@ -57,7 +57,7 @@ public:
 
         return true;
     }
-    std::string to_string() const
+    std::string to_string() const override
     {
         return v0.to_string() + " " + v1.to_string() + " " + v2.to_string();
     }

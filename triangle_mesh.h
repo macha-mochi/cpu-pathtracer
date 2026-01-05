@@ -30,6 +30,10 @@ public:
     }
 
     aabb bounding_box() const override {return triangles.bounding_box();}
+    std::string to_string() const override
+    {
+        return "A mesh with " + std::to_string(triangles.objects.size()) + "triangles";
+    }
 private:
     //const int nTriangles;
     //const int nVertices;
