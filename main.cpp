@@ -298,7 +298,7 @@ void cornell_box() {
     cam.flipHorizontal = true;
 
     cam.defocus_angle = 0;
-    cam.russian_roulette_termination = false;
+    cam.russian_roulette_termination = true;
 
     //std::cout << world.to_string() << std::endl;
     cam.render(world, lights);

@@ -38,22 +38,6 @@ public:
 
     bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const override
     {
-        //RT in one weekend impl
-        /*auto scatter_direction = rec.normal + random_unit_vector();
-
-        //catch degen scatter directions
-        if (scatter_direction.near_zero())
-        {
-            scatter_direction = rec.normal;
-        }
-        scattered = ray(rec.p, scatter_direction);
-        attenuation = albedo;
-        return true;*/
-
-        /*const vec3& wo = r_in.direction() * -1.0;
-        bsdf_sample s = sample(wo, rec);
-        scattered = ray(rec.p, s.wi);
-        attenuation = albedo;*/
         return true;
     }
 
@@ -141,7 +125,7 @@ public:
         }
         else
         {
-            direction = refract(unit_direction, rec.normal, ri);
+            direction = vec3(1, 0, 0); //refract(unit_direction, rec.normal, ri);
             refracted = true;
             //both unit_direction and rec.normal are unit vectors which the 'refract' method needs
         }
@@ -152,41 +136,12 @@ public:
         //out of say, glass into air it should be reset to 1 with creation of new way
         return true;
     }
-    color f_s(const vec3& wo, const vec3& wi, const hit_record& rec) const
-    {
-        return color(0,0,0); //nothing scatters in any direction except the one light reflects in
-    }
-    double pdf(const vec3& wo, const vec3& wi, const hit_record& rec) const
-    {
-        return 0.0; //we don't use a pdf for speculars bc there's only one correct direction we can calculate
-    }
-    bsdf_sample sample(const vec3& wo, const hit_record& rec) const
-    {
-        //assume smooth for this, can add microfacets in the gpu version hehe
-        vec3 unit_direction = unit_vector(wo);
-        //theta is angle between incoming ray and normal
-        double cos_theta = std::fmin(dot(-unit_direction, rec.normal), 1.0);
-        cos_theta = std::abs(cos_theta);
 
-        //need to find eta_i of medium ray is currently in, eta_t is known
-        double eta_i = rec.incident_eta;
-        double eta_t = rec.front_face ? refraction_index : 1.0;
-        double reflectance = Fr_dielectric(cos_theta, eta_i, eta_t);
-        vec3 wi;
-        if (random_double() < reflectance) //reflect
-        {
-            wi = reflect(unit_direction, rec.normal);
-            double f_s = reflectance / cos_theta;
-            //assuming clear glass aka attenuation = all 1
-            return bsdf_sample(wi, color(1.0, 1.0, 1.0) * f_s, 1, true);
-        }else //refract
-        {
-            wi = refract(unit_direction, rec.normal, eta_i/eta_t);
-            //TODO somehow update the ior of the ray
-            double f_s = (1-reflectance) / cos_theta;
-            return bsdf_sample(wi, color(1.0, 1.0, 1.0) * f_s, 1, true);
-
-        }
+    bsdf create_bsdf(const hit_record& rec) const override
+    {
+        bsdf b = bsdf{rec};
+        //b.add<specular_reflection>(albedo);
+        return b;
     }
 private:
     //refractive index in vacuum or air, or the ratio of the material's refractive index

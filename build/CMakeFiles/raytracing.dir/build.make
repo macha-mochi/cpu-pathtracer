@@ -95,6 +95,7 @@ raytracing_EXTERNAL_OBJECTS =
 
 raytracing: CMakeFiles/raytracing.dir/main.cpp.o
 raytracing: CMakeFiles/raytracing.dir/build.make
+raytracing: /opt/homebrew/opt/libomp/lib/libomp.dylib
 raytracing: CMakeFiles/raytracing.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/fayeyu/CLionProjects/raytracing/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable raytracing"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/raytracing.dir/link.txt --verbose=$(VERBOSE)

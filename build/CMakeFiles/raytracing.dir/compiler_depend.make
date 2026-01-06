@@ -1109,7 +1109,8 @@ CMakeFiles/raytracing.dir/main.cpp.o: /Users/fayeyu/CLionProjects/raytracing/mai
   /Users/fayeyu/CLionProjects/raytracing/sphere.h \
   /Users/fayeyu/CLionProjects/raytracing/triangle.h \
   /Users/fayeyu/CLionProjects/raytracing/triangle_mesh.h \
-  /Users/fayeyu/CLionProjects/raytracing/vec3.h
+  /Users/fayeyu/CLionProjects/raytracing/vec3.h \
+  /opt/homebrew/opt/libomp/include/omp.h
 
 
 /Users/fayeyu/CLionProjects/raytracing/vec3.h:
@@ -2107,6 +2108,8 @@ CMakeFiles/raytracing.dir/main.cpp.o: /Users/fayeyu/CLionProjects/raytracing/mai
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__cstddef/nullptr_t.h:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__random/piecewise_constant_distribution.h:
+
+/opt/homebrew/opt/libomp/include/omp.h:
 
 /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/stdio.h:
 

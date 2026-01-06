@@ -1057,6 +1057,7 @@ CMakeFiles/raytracing.dir/main.cpp.o: \
   /Users/fayeyu/CLionProjects/raytracing/fresnel.h \
   /Users/fayeyu/CLionProjects/raytracing/hit_record.h \
   /Users/fayeyu/CLionProjects/raytracing/camera.h \
+  /opt/homebrew/opt/libomp/include/omp.h \
   /Users/fayeyu/CLionProjects/raytracing/light.h \
   /Users/fayeyu/CLionProjects/raytracing/quad.h \
   /Users/fayeyu/CLionProjects/raytracing/obj_loader.h \

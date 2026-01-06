@@ -24,3 +24,10 @@ add_executable(raytracing main.cpp
         fresnel.h
         light.h
         hit_record.h)
+
+set(OpenMP_ROOT "/opt/homebrew/opt/libomp")
+
+find_package(OpenMP REQUIRED)
+
+target_link_libraries(raytracing PRIVATE OpenMP::OpenMP_CXX)
+target_include_directories(raytracing PRIVATE /opt/homebrew/opt/libomp/include)

@@ -1111,4 +1111,5 @@ CMakeFiles/raytracing.dir/main.cpp.o
  /Users/fayeyu/CLionProjects/raytracing/triangle.h
  /Users/fayeyu/CLionProjects/raytracing/triangle_mesh.h
  /Users/fayeyu/CLionProjects/raytracing/vec3.h
+ /opt/homebrew/opt/libomp/include/omp.h
 

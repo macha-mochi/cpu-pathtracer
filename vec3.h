@@ -138,14 +138,18 @@ inline vec3 reflect(const vec3& v, const vec3& n)
 {
     return v - 2*dot(n, v)*n;
 }
-inline vec3 refract(const vec3& uv, const vec3& n, double etai_over_etat)
+//returns false if no valid transmission, otherwise the transmission direction is wt, wi is in same hemi as normal
+inline bool refract(const vec3& wi, const vec3& n, double etai_over_etat, vec3* wt)
 {
-    //just reference raytracing in one weekend ch 11 for the math
-    //uses snell's law
-    auto cos_theta = std::fmin(dot(-uv, n), 1.0);
-    vec3 r_out_perp = etai_over_etat * (uv + cos_theta * n);
-    vec3 r_out_parallel = -std::sqrt(std::fabs(1.0 - r_out_perp.length_squared())) * n;
-    return r_out_perp + r_out_parallel;
+    double cos_theta_i = std::fmin(dot(n, wi), 1.0);
+    double sin2_theta_i = 1.0 - cos_theta_i * cos_theta_i;
+    double sin2_theta_t = etai_over_etat * etai_over_etat * sin2_theta_i;
+
+    if (sin2_theta_t > 1) return false; //no solution for snell's law, sin_theta_t > 1
+
+    double cos_theta_t = sqrt(1 - sin2_theta_t);
+    *wt = etai_over_etat * -wi + (etai_over_etat * dot(wi, n) - cos_theta_t) * n;
+    return true;
 }
 
 #endif //VEC3_H

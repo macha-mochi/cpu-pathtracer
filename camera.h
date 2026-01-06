@@ -5,6 +5,7 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include <omp.h>
 #include "color.h"
 #include "hittable.h"
 #include "light.h"
@@ -43,11 +44,13 @@ public:
     {
         initialize();
 
-        //Render
-        std::cout << "P3\n" << image_width << " " << image_height << "\n255\n";
+        std::vector<color> image_buffer(image_width * image_height);
 
+        int rows_done = 0;
+        omp_set_num_threads(8);
+        #pragma omp parallel for schedule(dynamic)
         for (int j = 0; j < image_height; j++) {
-            std::clog << "\rScanlines remaining: " << image_height - j << " " << std::flush;
+            std::clog << "\rScanlines remaining: " << image_height - rows_done << " " << std::flush;
             for (int i = 0; i < image_width; i++) {
                 color pixel_color(0, 0, 0);
                 for (int sample = 0; sample < samples_per_pixel; sample++)
@@ -59,10 +62,18 @@ public:
 
                 //pixel_samples_scale is what we need to mult by to average out pixel_color
                 //we average it out for monte carlo and anti alias
-                write_color(std::cout, pixel_samples_scale * pixel_color);
+                int index = j * image_width + i;
+                image_buffer[index] = pixel_samples_scale * pixel_color;
             }
+            rows_done++;
         }
 
+        //write to image
+        std::cout << "P3\n" << image_width << " " << image_height << "\n255\n";
+        for(const color& c : image_buffer)
+        {
+            write_color(std::cout, c);
+        }
         std::clog << "Done!\n";
 
     }
@@ -185,7 +196,6 @@ private:
                     pb_light*=1.0/num_lights;
                     w_bsdf = power_heuristic(pb_bsdf, pb_light);
                 } //if didn't hit a light on the emitting side, w_bsdf stays at 1
-                //w_bsdf = 1; //TODO REMOVE THIS WAS FOR DEBUGGING
                 throughput = throughput * w_bsdf * (f_s * cos_theta_i / pdf_b);
             }
 

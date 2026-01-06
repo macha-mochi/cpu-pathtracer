@@ -77,7 +77,7 @@ public:
     {
         return 0.0;
     }
-    virtual bsdf_sample sample(const vec3& wo) const
+    virtual bsdf_sample sample(const vec3& wo)
     {
         return bsdf_sample();
     }
@@ -130,7 +130,7 @@ public:
         }
         return cos_theta / M_PI;
     }
-    bsdf_sample sample(const vec3& wo) const override
+    bsdf_sample sample(const vec3& wo) override
     {
         //generate a wi using cosine weighted hemisphere sampling
         vec3 wi = cos_weighted_random_in_hemisphere();
@@ -145,13 +145,70 @@ private:
 class specular_reflection : bxdf
 {
 public:
-    specular_reflection(const color& specular_color, fresnel *f) : specular_color(specular_color), f(f)
+    specular_reflection(fresnel *f) : fresnel(f)
     {
         flags = SpecularReflection;
     }
+    color f_s(const vec3& wo, const vec3& wi) const override
+    {
+        return color(0,0,0); //nothing scatters in any direction except the one light reflects in
+    }
+    double pdf(const vec3& wo, const vec3& wi) const override
+    {
+        return 0.0; //we don't use a pdf for speculars bc there's only one correct direction we can calculate
+    }
+    //wo is a unit vector in render space alr
+    bsdf_sample sample(const vec3& wo) override
+    {
+        //theta is angle between incoming ray and normal
+        double cos_theta = std::fmin(dot(-wo, n), 1.0);
+        cos_theta = std::abs(cos_theta);
+
+        double reflectance = fresnel->evaluate(cos_theta);
+        vec3 wi = vec3(-wo.x(), -wo.y(), wo.z());
+        double f_s = reflectance / cos_theta; //im p sure cos_theta_i = cos_theta_r
+        return bsdf_sample(wi, color(1, 1, 1) * f_s, 1, true);
+    }
 private:
-    color specular_color;
-    fresnel *f; //ask chat what * means
+    fresnel *fresnel;
+};
+
+class specular_transmission : bxdf
+{
+public:
+    specular_transmission(color& t, double eta_a, double eta_b) : t_scale_factor(t), eta_a(eta_a), eta_b(eta_b),
+    fresnel(eta_a, eta_b)
+    {
+        flags = SpecularTransmission;
+    }
+    color f_s(const vec3& wo, const vec3& wi) const override
+    {
+        return color(0,0,0); //nothing scatters in any direction except the one light reflects in
+    }
+    double pdf(const vec3& wo, const vec3& wi) const override
+    {
+        return 0.0; //we don't use a pdf for speculars bc there's only one correct direction we can calculate
+    }
+    //wo is a unit vector in render space alr
+    bsdf_sample sample(const vec3& wo) override
+    {
+        //theta is angle between incoming ray and normal
+        double cos_theta = std::fmin(dot(-wo, n), 1.0);
+        bool entering = cos_theta > 0; //cos_theta is just z component of -wo
+        double eta_i = entering ? eta_a : eta_b;
+        double eta_t = entering ? eta_b : eta_a;
+        cos_theta = std::abs(cos_theta);
+
+        double reflectance = fresnel.evaluate(cos_theta);
+        //vec3 wi = refract(wo, n, eta_i/eta_t);
+        vec3 wi(1, 0, 0);
+        double f_s = (1-reflectance) / cos_theta;
+        return bsdf_sample(wi, color(1, 1, 1) * f_s, 1, true);
+    }
+private:
+    color t_scale_factor;
+    double eta_a, eta_b; //above = the side the surface normal is in, below = the other side
+    fresnel_dielectric fresnel;
 };
 
 class bsdf
@@ -193,7 +250,7 @@ public:
     {
         //TODO i will use uniform for now and then switch to balance heuristic or whatever later so i can compare
         int rand_ind = random_int(0,static_cast<int>(bxdfs.size()) - 1);
-        const bxdf& b = *bxdfs[rand_ind];
+        bxdf& b = *bxdfs[rand_ind];
         vec3 wo = local_to_render(wo_world);
         bsdf_sample sample_for_dir = b.sample(wo);
         vec3 wi = sample_for_dir.wi;
@@ -254,5 +311,6 @@ private:
         return result;
     }
 };
+
 
 #endif //BXDF_H
