@@ -30,6 +30,10 @@ public:
         //if outward normal in the same dir as ray, ray is inside sphere
         //outward normal is from center of sphere to point of intersection
     }
+    vec3 outward_normal() const
+    {
+        return front_face ? normal : -normal;
+    }
 };
 
 #endif //HIT_RECORD_H

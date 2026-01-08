@@ -47,7 +47,6 @@ public:
         std::vector<color> image_buffer(image_width * image_height);
 
         int rows_done = 0;
-        omp_set_num_threads(8);
         #pragma omp parallel for schedule(dynamic)
         for (int j = 0; j < image_height; j++) {
             std::clog << "\rScanlines remaining: " << image_height - rows_done << " " << std::flush;
@@ -197,6 +196,8 @@ private:
                     w_bsdf = power_heuristic(pb_bsdf, pb_light);
                 } //if didn't hit a light on the emitting side, w_bsdf stays at 1
                 throughput = throughput * w_bsdf * (f_s * cos_theta_i / pdf_b);
+                //std::clog << "f_s: " << f_s << " cos_theta_i: " << cos_theta_i << " pdf: " << pdf_b << std::endl;
+                //std::clog << "throughput: " << throughput << std::endl;
             }
 
             if (!hit_anything)
@@ -215,12 +216,13 @@ private:
             bsdf_sample b_sample = b.sample(wo);
             vec3 wi = b_sample.wi; //is in the same hemisphere as the normal
             f_s = b_sample.f;
-            cos_theta_i = dot(wi, rec.normal);
+            cos_theta_i = std::abs(dot(wi, rec.normal)); //bc the cos(theta) just represents a ratio of areas
             pdf_b = b_sample.pdf;
             r = ray(rec.p, wi);
             if (b_sample.is_delta) continue; //don't nee since it's delta, use bsdf only
 
             //sample a direct light source via NEE
+            if (num_lights == 0) continue;
             int light_index = random_int(0, num_lights - 1);
             auto& chosen_light_ptr = lights.objects[light_index];
             auto* chosen_light = dynamic_cast<light*>(chosen_light_ptr.get());
@@ -237,6 +239,7 @@ private:
             //TODO this is just uniform random picking of lights possibly change later
             color f_s_l = b.f_s(wo, l_sample.wi);
             double cos_theta_l = dot(rec.normal, l_sample.wi);
+            //TODO if you ever have transparent stuff that uses NEE will have to change this to absolute as well and make the shadow ray actually traced through refracts and stuff... this is why we want bdpt
             direct_color = f_s_l * cos_theta_l * l_sample.emitted / pdf_l;
 
             //calculate NEE weight //TODO for point or directional lights, expected contribution for w_light is only from nee since prob that bsdf hits that exact dir is 0

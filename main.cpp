@@ -89,7 +89,7 @@ void make_small_test_scene()
     world.add(make_shared<sphere>(point3(0.0, 0.0, -1.2), 0.5, material_center));
     world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_left));
     world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.4, material_bubble));
-    world.add(make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
+    //world.add(make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
 
     world = hittable_list(make_shared<bvh_node>(world));
 
@@ -97,17 +97,18 @@ void make_small_test_scene()
 
     cam.aspect_ratio      = 16.0 / 9.0;
     cam.image_width       = 400;
-    cam.samples_per_pixel = 100;
+    cam.samples_per_pixel = 150;
     cam.max_depth         = 50;
     cam.background        = color(0.70, 0.80, 1.00);
 
     cam.vfov     = 90;
-    cam.lookfrom = point3(-2,2,1);
+    cam.lookfrom = point3(0,0,0);
     cam.lookat   = point3(0,0,-1);
     cam.vup      = vec3(0,1,0);
 
-    cam.defocus_angle = 10.0;
-    cam.focus_dist    = 3.4;
+    cam.defocus_angle = 0; //10.0;
+    //cam.focus_dist    = 3.4;
+    cam.russian_roulette_termination = true;
 
     cam.render(world);
 }
@@ -145,6 +146,7 @@ void quads()
     cam.vup      = vec3(0,1,0);
 
     cam.defocus_angle = 0;
+    cam.russian_roulette_termination = false;
 
     cam.render(world);
 }
@@ -307,14 +309,14 @@ void cornell_box() {
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    switch (7)
+    switch (3)
     {
-        case 1: make_big_scene();
-        case 2: make_small_test_scene();
-        case 3: quads();
+        case 1: make_big_scene(); break;
+        case 2: make_small_test_scene(); break;
+        case 3: quads(); break;
         case 4: load_obj(); break;
-        case 5: triangle_test();
-        case 6: simple_light();
+        case 5: triangle_test(); break;
+        case 6: simple_light(); break;
         case 7: cornell_box();
     }
 

@@ -138,9 +138,13 @@ inline vec3 reflect(const vec3& v, const vec3& n)
 {
     return v - 2*dot(n, v)*n;
 }
-//returns false if no valid transmission, otherwise the transmission direction is wt, wi is in same hemi as normal
-inline bool refract(const vec3& wi, const vec3& n, double etai_over_etat, vec3* wt)
+//returns false if no valid transmission, otherwise the transmission direction is wt
+//if wi and n are not in the same hemi, n will be flipped so they are
+//wt is a unit vector
+inline bool refract(const vec3& wi, const vec3& norm, double etai_over_etat, vec3& wt)
 {
+    //flip the normal if wi and n are not in the same hemisphere
+    vec3 n = dot(wi, norm) < 0 ? -norm : norm;
     double cos_theta_i = std::fmin(dot(n, wi), 1.0);
     double sin2_theta_i = 1.0 - cos_theta_i * cos_theta_i;
     double sin2_theta_t = etai_over_etat * etai_over_etat * sin2_theta_i;
@@ -148,7 +152,10 @@ inline bool refract(const vec3& wi, const vec3& n, double etai_over_etat, vec3* 
     if (sin2_theta_t > 1) return false; //no solution for snell's law, sin_theta_t > 1
 
     double cos_theta_t = sqrt(1 - sin2_theta_t);
-    *wt = etai_over_etat * -wi + (etai_over_etat * dot(wi, n) - cos_theta_t) * n;
+    vec3 wt1 = etai_over_etat * -wi + (etai_over_etat * cos_theta_i - cos_theta_t) * n;
+    wt.e[0] = wt1.e[0];
+    wt.e[1] = wt1.e[1];
+    wt.e[2] = wt1.e[2];
     return true;
 }
 

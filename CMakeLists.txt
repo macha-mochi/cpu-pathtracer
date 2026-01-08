@@ -3,6 +3,9 @@ project(raytracing)
 
 set(CMAKE_CXX_STANDARD 20)
 
+find_package(OpenMP REQUIRED)
+#set(OpenMP_ROOT "/opt/homebrew/opt/libomp")
+list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/libomp")
 add_executable(raytracing main.cpp
         vec3.h
         color.h
@@ -23,11 +26,6 @@ add_executable(raytracing main.cpp
         bxdf.h
         fresnel.h
         light.h
-        hit_record.h)
-
-set(OpenMP_ROOT "/opt/homebrew/opt/libomp")
-
-find_package(OpenMP REQUIRED)
-
+        hit_record.h
+        )
 target_link_libraries(raytracing PRIVATE OpenMP::OpenMP_CXX)
-target_include_directories(raytracing PRIVATE /opt/homebrew/opt/libomp/include)

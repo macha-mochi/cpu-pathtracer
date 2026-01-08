@@ -993,6 +993,7 @@ CMakeFiles/raytracing.dir/main.cpp.o: \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__charconv/to_chars.h \
   /Users/fayeyu/CLionProjects/raytracing/rtweekend.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/iostream \
+  /opt/homebrew/opt/libomp/include/omp.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/random \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__random/bernoulli_distribution.h \
   /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/c++/v1/__random/uniform_real_distribution.h \
@@ -1057,7 +1058,6 @@ CMakeFiles/raytracing.dir/main.cpp.o: \
   /Users/fayeyu/CLionProjects/raytracing/fresnel.h \
   /Users/fayeyu/CLionProjects/raytracing/hit_record.h \
   /Users/fayeyu/CLionProjects/raytracing/camera.h \
-  /opt/homebrew/opt/libomp/include/omp.h \
   /Users/fayeyu/CLionProjects/raytracing/light.h \
   /Users/fayeyu/CLionProjects/raytracing/quad.h \
   /Users/fayeyu/CLionProjects/raytracing/obj_loader.h \

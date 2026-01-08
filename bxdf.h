@@ -21,6 +21,7 @@ enum bxdf_flags
     GlossyTransmission = Transmission | Glossy,
     SpecularReflection = Reflection | Specular,
     SpecularTransmission = Transmission | Specular,
+    SpecularReflTran = Specular | Reflection | Transmission,
     All = Diffuse | Glossy | Specular | Reflection | Transmission
 };
 inline bool is_reflective(bxdf_flags f)
@@ -142,10 +143,10 @@ private:
     color albedo;
 };
 
-class specular_reflection : bxdf
+class specular_reflection : public bxdf
 {
 public:
-    specular_reflection(fresnel *f) : fresnel(f)
+    specular_reflection(const color& r, fresnel *f) : r_scale_factor(r), fresnel(f)
     {
         flags = SpecularReflection;
     }
@@ -157,23 +158,24 @@ public:
     {
         return 0.0; //we don't use a pdf for speculars bc there's only one correct direction we can calculate
     }
-    //wo is a unit vector in render space alr
+    //wo is a unit vector in render space alr, in same hemisphere as normal pointing away from shading point
     bsdf_sample sample(const vec3& wo) override
     {
         //theta is angle between incoming ray and normal
-        double cos_theta = std::fmin(dot(-wo, n), 1.0);
+        double cos_theta = std::fmin(dot(wo, n), 1.0);
         cos_theta = std::abs(cos_theta);
 
         double reflectance = fresnel->evaluate(cos_theta);
         vec3 wi = vec3(-wo.x(), -wo.y(), wo.z());
         double f_s = reflectance / cos_theta; //im p sure cos_theta_i = cos_theta_r
-        return bsdf_sample(wi, color(1, 1, 1) * f_s, 1, true);
+        return bsdf_sample(wi, r_scale_factor * f_s, 1, true);
     }
 private:
+    color r_scale_factor;
     fresnel *fresnel;
 };
 
-class specular_transmission : bxdf
+class specular_transmission : public bxdf
 {
 public:
     specular_transmission(color& t, double eta_a, double eta_b) : t_scale_factor(t), eta_a(eta_a), eta_b(eta_b),
@@ -189,23 +191,83 @@ public:
     {
         return 0.0; //we don't use a pdf for speculars bc there's only one correct direction we can calculate
     }
-    //wo is a unit vector in render space alr
+    //wo is a unit vector in render space alr, is pointing away from shading point same hemi as normal
     bsdf_sample sample(const vec3& wo) override
     {
         //theta is angle between incoming ray and normal
-        double cos_theta = std::fmin(dot(-wo, n), 1.0);
+        double cos_theta = std::fmin(dot(wo, n), 1.0);
         bool entering = cos_theta > 0; //cos_theta is just z component of -wo
         double eta_i = entering ? eta_a : eta_b;
         double eta_t = entering ? eta_b : eta_a;
         cos_theta = std::abs(cos_theta);
 
         double reflectance = fresnel.evaluate(cos_theta);
-        //vec3 wi = refract(wo, n, eta_i/eta_t);
-        vec3 wi(1, 0, 0);
-        double f_s = (1-reflectance) / cos_theta;
-        return bsdf_sample(wi, color(1, 1, 1) * f_s, 1, true);
+        vec3 wi;
+        if (refract(wo, n, eta_i/eta_t, wi))
+        {
+            double cos_theta_i = dot(wi, n); //wi and n should both be unit vectors
+            double f_s = (1-reflectance) / cos_theta_i;
+            f_s *= (eta_i * eta_i)/(eta_t* eta_t); //account for "compressing" of light rays as it transmits
+            return bsdf_sample(wi, t_scale_factor * f_s, 1, true);
+        }else
+        {
+            return bsdf_sample();
+        }
     }
 private:
+    color t_scale_factor;
+    double eta_a, eta_b; //above = the side the surface normal is in, below = the other side
+    fresnel_dielectric fresnel;
+};
+
+class fresnel_specular : public bxdf
+{
+public:
+    fresnel_specular(const color& r, const color& t, double eta_a, double eta_b) :
+    r_scale_factor(r), t_scale_factor(t), eta_a(eta_a), eta_b(eta_b), fresnel(eta_a, eta_b)
+    {
+        flags = SpecularReflTran;
+    }
+    color f_s(const vec3& wo, const vec3& wi) const override
+    {
+        return color(0,0,0); //nothing scatters in any direction except the one light reflects in
+    }
+    double pdf(const vec3& wo, const vec3& wi) const override
+    {
+        return 0.0; //we don't use a pdf for speculars bc there's only one correct direction we can calculate
+    }
+    //wo is a unit vector in render space alr, pointing away from shading point
+    bsdf_sample sample(const vec3& wo) override
+    {
+        double cos_theta = std::fmin(dot(wo, n), 1.0);
+        bool entering = cos_theta > 0; //cos_theta is just z component of wo
+        double eta_i = entering ? eta_a : eta_b;
+        double eta_t = entering ? eta_b : eta_a;
+
+        //std::clog << "in bsdf | eta_i: " << eta_i << " eta_t: " << eta_t << std::endl;
+        double reflectance = fresnel.evaluate(cos_theta);
+        vec3 wi;
+        color f_s;
+        double pdf;
+        if (random_double() < reflectance) //reflect
+        {
+            wi = vec3(-wo.x(), -wo.y(), wo.z());
+            f_s = r_scale_factor * (reflectance / std::abs(cos_theta)); //im p sure cos_theta_i = cos_theta_r
+            pdf = reflectance;
+        }else //refract
+        {
+            refract(wo, n, eta_i/eta_t, wi);
+            double cos_theta_i = dot(wi, n); //wi and n should both be unit vectors
+            //std::clog << "refract -> eta ratio squared: " << (eta_i * eta_i)/(eta_t* eta_t) << " cos theta i: " << cos_theta_i << std::endl;
+            f_s = t_scale_factor * (eta_i * eta_i)/(eta_t* eta_t) * (1-reflectance) / std::abs(cos_theta_i);
+            //account for "compressing" of light rays as it transmits
+            pdf = 1 - reflectance;
+        }
+        //std::clog << "returning sample with f_s: " << f_s << " and pdf: " << pdf << std::endl;
+        return bsdf_sample(wi, f_s, pdf, true);
+    }
+private:
+    color r_scale_factor;
     color t_scale_factor;
     double eta_a, eta_b; //above = the side the surface normal is in, below = the other side
     fresnel_dielectric fresnel;
@@ -220,8 +282,8 @@ public:
     bsdf(const hit_record& rec) : rec(rec)
     {
         //create an orthonormal basis at the hit_record point, with up = normal
-        const vec3& n = rec.normal;
-        vec3 a = (std::abs(rec.normal.x()) > 0.95) ? vec3(0, 1, 0) : vec3(1, 0, 0);
+        n = rec.outward_normal();
+        vec3 a = (std::abs(n.x()) > 0.95) ? vec3(0, 1, 0) : vec3(1, 0, 0);
         //a is just any vector that's not parallel to normal
         t1 = unit_vector(cross(a, n));
         t2 = unit_vector(cross(n, t1));
@@ -254,23 +316,23 @@ public:
         vec3 wo = local_to_render(wo_world);
         bsdf_sample sample_for_dir = b.sample(wo);
         vec3 wi = sample_for_dir.wi;
+        vec3 wi_world = render_to_local(wi);
         if (sample_for_dir.is_delta)
         {
-            return sample_for_dir; //if it's a delta distribution don't add up any other bxdfs into f and pdf
+            return bsdf_sample(wi_world, sample_for_dir.f, sample_for_dir.pdf, true);
+            //if it's a delta distribution don't add up any other bxdfs into f and pdf
         }
-        vec3 wi_world = render_to_local(wi);
         return bsdf_sample(wi_world, f_s_render(wo, wi), pdf_render(wo, wi), false);
     }
     vec3 local_to_render(const vec3& v_local) const
     {
-        //n = rec.normal
         //we want to multiply v_local by the inverse of [t1 | t2 | n]
         //bc its an orthonormal basis the inverse is just the transpose so now t1, t2, n are the rows
-        return vec3(dot(v_local, t1), dot(v_local, t2), dot(v_local, rec.normal));
+        return vec3(dot(v_local, t1), dot(v_local, t2), dot(v_local, n));
     }
     vec3 render_to_local(const vec3& v_render) const
     {
-        return v_render.x() * t1 + v_render.y() * t2 + v_render.z() * rec.normal;
+        return v_render.x() * t1 + v_render.y() * t2 + v_render.z() * n;
     }
     std::string flags_to_string()
     {
@@ -283,7 +345,8 @@ public:
         return s;
     }
 private:
-    //an orthonormal basis in world space at the hit_record point, with up = hit_rec.normal
+    //an orthonormal basis in world space at the hit_record point, with up = hit_rec.outward normal
+    vec3 n;
     vec3 t1;
     vec3 t2;
     //the physically correct f_s from each bxdf, takes wo and wi in RENDER SPACE

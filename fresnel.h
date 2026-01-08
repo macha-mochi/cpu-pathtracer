@@ -66,6 +66,7 @@ private:
             eta_t = temp;
             cos_theta_i = std::abs(cos_theta_i); //ensure cos_theta_i is nonneg
         }
+        //std::clog << "fresnel is using eta_i: " << eta_i << " eta_t: " << eta_t << std::endl;
 
         //find cos_theta_t using snell's law
         double sin_theta_i = std::sqrt(std::max(static_cast<double>(0), 1 - cos_theta_i * cos_theta_i));

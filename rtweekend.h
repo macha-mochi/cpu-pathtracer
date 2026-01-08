@@ -10,6 +10,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <omp.h>
 #include <random>
 
 //c++ std usings
@@ -31,9 +32,9 @@ inline double random_double()
     //returns a random real in [0, 1)
     //return std::rand() / (RAND_MAX + 1.0);
 
-    static std::random_device rd;
-    static std::mt19937 generator (rd());
-    static std::uniform_real_distribution<> distr_double(0.0, 1.0);
+    thread_local std::random_device rd;
+    thread_local std::mt19937 generator (rd() + omp_get_thread_num());
+    thread_local std::uniform_real_distribution<> distr_double(0.0, 1.0);
     return distr_double(generator);
 }
 //returns a random real in [min, max)
@@ -43,8 +44,8 @@ inline double random_double(double min, double max){
 //returns a random int in [min, max]
 inline int random_int(int min, int max)
 {
-    static std::random_device rd;
-    static std::mt19937 generator (rd());
+    thread_local std::random_device rd;
+    thread_local std::mt19937 generator (rd() + omp_get_thread_num());
     std::uniform_int_distribution<> distr_int(min, max);
     return distr_int(generator);
 }
