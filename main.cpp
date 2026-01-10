@@ -33,7 +33,7 @@ void make_big_scene()
                     // metal
                     auto albedo = color::random(0.5, 1);
                     auto fuzz = random_double(0, 0.5);
-                    sphere_material = make_shared<metal>(albedo, fuzz);
+                    sphere_material = make_shared<metal>(Metal::silver.eta, Metal::silver.k, albedo, fuzz);
                     world.add(make_shared<sphere>(center, 0.2, sphere_material));
                 } else {
                     // glass
@@ -50,7 +50,8 @@ void make_big_scene()
     auto material2 = make_shared<lambertian>(color(0.4, 0.2, 0.1));
     world.add(make_shared<sphere>(point3(-4, 1, 0), 1.0, material2));
 
-    auto material3 = make_shared<metal>(color(0.7, 0.6, 0.5), 0.0);
+    //auto material3 = make_shared<metal>(color(0.7, 0.6, 0.5), 0.0);
+    auto material3 = make_shared<metal>(Metal::silver);
     world.add(make_shared<sphere>(point3(4, 1, 0), 1.0, material3));
 
     world = hittable_list(make_shared<bvh_node>(world));
@@ -82,14 +83,15 @@ void make_small_test_scene()
     //auto material_left = make_shared<metal>(color(0.8, 0.8, 0.8), 0.3);
     auto material_left = make_shared<dielectric>(1.50);
     auto material_bubble = make_shared<dielectric>(1.00 / 1.50);
-    auto material_right = make_shared<metal>(color(0.8, 0.6, 0.2), 1.0);
+    //auto material_right = make_shared<metal>(color(0.8, 0.6, 0.2), 1.0);
+    auto material_right = make_shared<metal>(Metal::gold, color(0.8, 0.6, 0.2));
 
     //ground
     world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
     world.add(make_shared<sphere>(point3(0.0, 0.0, -1.2), 0.5, material_center));
     world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_left));
     world.add(make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.4, material_bubble));
-    //world.add(make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
+    world.add(make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
 
     world = hittable_list(make_shared<bvh_node>(world));
 
@@ -97,7 +99,7 @@ void make_small_test_scene()
 
     cam.aspect_ratio      = 16.0 / 9.0;
     cam.image_width       = 400;
-    cam.samples_per_pixel = 150;
+    cam.samples_per_pixel = 100;
     cam.max_depth         = 50;
     cam.background        = color(0.70, 0.80, 1.00);
 
@@ -250,7 +252,7 @@ void cornell_box() {
     auto white = make_shared<lambertian>(color(.73, .73, .73));
     auto green = make_shared<lambertian>(color(.12, .45, .15));
     auto light_mat = make_shared<diffuse_light>(color(20, 20, 20), color(1.0, 1.0, 1.0));
-    auto metal_mat = make_shared<metal>(color(0.75, 0.75, 0.75), 0);
+    auto metal_mat = make_shared<metal>(Metal::silver);
     auto glass = make_shared<dielectric>(1.5);
 
     world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
@@ -309,7 +311,7 @@ void cornell_box() {
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    switch (3)
+    switch (2)
     {
         case 1: make_big_scene(); break;
         case 2: make_small_test_scene(); break;

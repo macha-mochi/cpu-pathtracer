@@ -134,6 +134,7 @@ inline vec3 random_on_hemisphere(const vec3& normal){
     if(dot(rand, normal) > 0.0) return rand;
     return -rand;
 }
+//this func assumes that v is pointed at the shading point and not away from it
 inline vec3 reflect(const vec3& v, const vec3& n)
 {
     return v - 2*dot(n, v)*n;

@@ -44,10 +44,33 @@ private:
     color albedo;
 };
 
+struct complex_ior
+{
+    double eta;
+    double k;
+};
+
+namespace Metal
+{
+    static constexpr complex_ior steel{2.485, 3.433};
+    static constexpr complex_ior silver{0.177, 3.638};
+    static constexpr complex_ior gold{0.37, 2.82};
+    static constexpr complex_ior copper{0.617, 2.63};
+}
+
 class metal : public material
 {
 public:
-    metal(const color& albedo, double fuzz) : albedo(albedo), fuzz(fuzz < 1 ? fuzz : 1){}
+    explicit metal(const complex_ior& i) : eta_i(1.0), eta_t(i.eta), k_t(i.k),
+    f(1.0, eta_t, k_t), albedo(color(1, 1, 1)), fuzz(1) {}
+    metal(const complex_ior& i, const color& albedo) : eta_i(1.0), eta_t(i.eta), k_t(i.k),
+    f(1.0, eta_t, k_t), albedo(albedo), fuzz(1) {}
+    metal(const double eta_t, const double k_t, const color& albedo, double fuzz) :
+    eta_i(1.0), eta_t(eta_t), k_t(k_t), f(eta_i, eta_t, k_t), albedo(albedo), fuzz(fuzz < 1 ? fuzz : 1)
+    {}
+    metal(const double eta_i, const double eta_t, const double k_t, const color& albedo, double fuzz) :
+    eta_i(eta_i), eta_t(eta_t), k_t(k_t), f(eta_i, eta_t, k_t), albedo(albedo), fuzz(fuzz < 1 ? fuzz : 1)
+    {}
 
     bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const
     {
@@ -60,26 +83,22 @@ public:
         //if ray 'scattered' is pointed inside surface then discard
         return (dot(scattered.direction(), rec.normal) > 0);
     }
-    static double Fr_conductor(double cos_theta_i, double eta_i, double eta_t, double k_t){
-        /*double eta = eta_t / eta_i;
-        double k = k_t / eta_i;
-
-        double cos_squared = cos_theta_i * cos_theta_i;
-        double ab_temp = eta*eta - k*k - (1-cos_squared);
-        double a2_b2 = sqrt(ab_temp * ab_temp + 4 * eta * eta * k * k);
-
-        double r_perp = a2_b2 - 2 *
-        */
-        return 1.0;
+    bsdf create_bsdf(const hit_record& rec) const override
+    {
+        bsdf b = bsdf{rec};
+        b.add<specular_reflection>(albedo, &f);
+        return b;
     }
     std::string to_string() const override
     {
-        return "Metal";
+        return "Metal with albedo " + albedo.to_string();
     }
 
 private:
+    double eta_i, eta_t, k_t;
     color albedo;
     double fuzz;
+    const fresnel_conductor f;
 };
 
 class dielectric : public material

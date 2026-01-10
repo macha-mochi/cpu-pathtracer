@@ -146,7 +146,7 @@ private:
 class specular_reflection : public bxdf
 {
 public:
-    specular_reflection(const color& r, fresnel *f) : r_scale_factor(r), fresnel(f)
+    specular_reflection(const color& r, const fresnel *f) : r_scale_factor(r), fresnel(f)
     {
         flags = SpecularReflection;
     }
@@ -172,7 +172,7 @@ public:
     }
 private:
     color r_scale_factor;
-    fresnel *fresnel;
+    const fresnel *fresnel;
 };
 
 class specular_transmission : public bxdf
