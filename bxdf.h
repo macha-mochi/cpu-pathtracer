@@ -165,9 +165,9 @@ public:
         double cos_theta = std::fmin(dot(wo, n), 1.0);
         cos_theta = std::abs(cos_theta);
 
-        double reflectance = fresnel->evaluate(cos_theta);
+        color reflectance = fresnel->evaluate(cos_theta);
         vec3 wi = vec3(-wo.x(), -wo.y(), wo.z());
-        double f_s = reflectance / cos_theta; //im p sure cos_theta_i = cos_theta_r
+        color f_s = reflectance / cos_theta; //im p sure cos_theta_i = cos_theta_r
         return bsdf_sample(wi, r_scale_factor * f_s, 1, true);
     }
 private:
@@ -201,12 +201,12 @@ public:
         double eta_t = entering ? eta_b : eta_a;
         cos_theta = std::abs(cos_theta);
 
-        double reflectance = fresnel.evaluate(cos_theta);
+        double reflectance = fresnel.evaluate(cos_theta).x(); //dielectric so all channels should be same
         vec3 wi;
         if (refract(wo, n, eta_i/eta_t, wi))
         {
             double cos_theta_i = dot(wi, n); //wi and n should both be unit vectors
-            double f_s = (1-reflectance) / cos_theta_i;
+            double f_s = (1-reflectance) / std::abs(cos_theta_i);
             f_s *= (eta_i * eta_i)/(eta_t* eta_t); //account for "compressing" of light rays as it transmits
             return bsdf_sample(wi, t_scale_factor * f_s, 1, true);
         }else
@@ -241,11 +241,16 @@ public:
     {
         double cos_theta = std::fmin(dot(wo, n), 1.0);
         bool entering = cos_theta > 0; //cos_theta is just z component of wo
+        //cos_theta is cosine with the shading normal, rec.normal, which always faces same as ray, so entering should
+        //always be true. so technically i dont need this code but if i implement normal maps (in hit_record i expect)
+        //and this causes rec.normal and wo to no longer be always facing the same this will be helpful for ensuring
+        //no back face problems
         double eta_i = entering ? eta_a : eta_b;
         double eta_t = entering ? eta_b : eta_a;
 
         //std::clog << "in bsdf | eta_i: " << eta_i << " eta_t: " << eta_t << std::endl;
-        double reflectance = fresnel.evaluate(cos_theta);
+        double reflectance = fresnel.evaluate(cos_theta).x(); //is dielectric so you know all channels r the same (probably)
+        //std::clog << fresnel.evaluate(cos_theta) << std::endl;
         vec3 wi;
         color f_s;
         double pdf;
@@ -253,6 +258,7 @@ public:
         {
             wi = vec3(-wo.x(), -wo.y(), wo.z());
             f_s = r_scale_factor * (reflectance / std::abs(cos_theta)); //im p sure cos_theta_i = cos_theta_r
+            //std::clog << "reflected" << std::endl;
             pdf = reflectance;
         }else //refract
         {
@@ -282,7 +288,7 @@ public:
     bsdf(const hit_record& rec) : rec(rec)
     {
         //create an orthonormal basis at the hit_record point, with up = normal
-        n = rec.outward_normal();
+        n = rec.normal; //rec.outward_normal();
         vec3 a = (std::abs(n.x()) > 0.95) ? vec3(0, 1, 0) : vec3(1, 0, 0);
         //a is just any vector that's not parallel to normal
         t1 = unit_vector(cross(a, n));

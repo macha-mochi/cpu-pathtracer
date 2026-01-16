@@ -27,5 +27,6 @@ add_executable(raytracing main.cpp
         fresnel.h
         light.h
         hit_record.h
-        )
+        spectrum.h
+)
 target_link_libraries(raytracing PRIVATE OpenMP::OpenMP_CXX)

@@ -1106,6 +1106,7 @@ CMakeFiles/raytracing.dir/main.cpp.o: /Users/fayeyu/CLionProjects/raytracing/mai
   /Users/fayeyu/CLionProjects/raytracing/quad.h \
   /Users/fayeyu/CLionProjects/raytracing/ray.h \
   /Users/fayeyu/CLionProjects/raytracing/rtweekend.h \
+  /Users/fayeyu/CLionProjects/raytracing/spectrum.h \
   /Users/fayeyu/CLionProjects/raytracing/sphere.h \
   /Users/fayeyu/CLionProjects/raytracing/triangle.h \
   /Users/fayeyu/CLionProjects/raytracing/triangle_mesh.h \
@@ -1116,6 +1117,8 @@ CMakeFiles/raytracing.dir/main.cpp.o: /Users/fayeyu/CLionProjects/raytracing/mai
 /Users/fayeyu/CLionProjects/raytracing/vec3.h:
 
 /Users/fayeyu/CLionProjects/raytracing/sphere.h:
+
+/Users/fayeyu/CLionProjects/raytracing/spectrum.h:
 
 /Users/fayeyu/CLionProjects/raytracing/rtweekend.h:
 

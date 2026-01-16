@@ -56,7 +56,8 @@ public:
                 {
                     ray r = get_ray(i, j);
                     //throughput = color(1, 1, 1); //need to reset the throughput before each ray_color (RECURSIVE) call
-                    pixel_color+=ray_color_iter(r, max_depth, world, lights);
+                    color c = ray_color_iter(r, max_depth, world, lights);
+                    pixel_color+=c;
                 }
 
                 //pixel_samples_scale is what we need to mult by to average out pixel_color
@@ -158,6 +159,7 @@ private:
 
     color ray_color_iter(const ray& camera_ray, int depth, const hittable& world, const hittable_list& lights)
     {
+        //std::string debug = "";
         color throughput = color(1, 1, 1);
         color outgoing_radiance = color(0, 0, 0);
         int num_lights = lights.objects.size();
@@ -166,6 +168,7 @@ private:
         color f_s;
         double cos_theta_i;
         double pdf_b;
+        bool hit_specular = false;
         for (int i = 0; i < depth; i++)
         {
             if (russian_roulette_termination && i >= 4)
@@ -180,15 +183,11 @@ private:
 
             hit_record rec;
             bool hit_anything = world.hit(r, interval(0.001, infinity), rec);
-            /*if (hit_anything)
-            {
-                return 0.5* (rec.normal + vec3(1, 1, 1));
-            }else{ return color(0, 0, 0);}*/
 
             if (i != 0) //not camera ray and we hit something, update throughput
             {
                 double w_bsdf = 1;
-                if (hit_anything && rec.hit_light && rec.front_face)
+                if (!hit_specular && hit_anything && rec.hit_light && rec.front_face)
                 {
                     double pb_bsdf = pdf_b;
                     double pb_light = rec.light_source->pdf(r.origin(), rec.p);
@@ -196,8 +195,11 @@ private:
                     w_bsdf = power_heuristic(pb_bsdf, pb_light);
                 } //if didn't hit a light on the emitting side, w_bsdf stays at 1
                 throughput = throughput * w_bsdf * (f_s * cos_theta_i / pdf_b);
-                //std::clog << "f_s: " << f_s << " cos_theta_i: " << cos_theta_i << " pdf: " << pdf_b << std::endl;
-                //std::clog << "throughput: " << throughput << std::endl;
+
+                /*
+                debug+= "CALCULATING THROUGHPUT: f: " + f_s.to_string() + " cos: " + std::to_string(cos_theta_i) + " pdf: " + std::to_string(pdf_b) + "\n";
+                debug+="w_bsdf: " + std::to_string(w_bsdf) + " change in throughput = " + (w_bsdf * (f_s * cos_theta_i / pdf_b)).to_string() + "\n";
+                debug+="THROUGHPUT IS " + throughput.to_string() + "\n";*/
             }
 
             if (!hit_anything)
@@ -209,9 +211,14 @@ private:
             //Le term
             color color_from_emission = rec.front_face ? rec.mat->emitted() : color(0, 0, 0);
             outgoing_radiance += throughput * color_from_emission;
+            /*debug+="hit material: " + rec.mat->to_string() + "\n";
+            if (color_from_emission.length_squared() > 1e-8)
+            {
+                debug+="EMISSION CONTRIBUTION: added " + (throughput * color_from_emission).to_string() + "\n";
+            }*/
 
-            //sample BSDF (but contribution will actually be added next time loop runs)
-            bsdf b = rec.mat->create_bsdf(rec);
+            //sample BSDF for this shading point (rec.p)
+            bsdf b = rec.mat->create_bsdf(rec, r);
             vec3 wo = unit_vector(-r.direction());
             bsdf_sample b_sample = b.sample(wo);
             vec3 wi = b_sample.wi; //is in the same hemisphere as the normal
@@ -219,10 +226,10 @@ private:
             cos_theta_i = std::abs(dot(wi, rec.normal)); //bc the cos(theta) just represents a ratio of areas
             pdf_b = b_sample.pdf;
             r = ray(rec.p, wi);
-            if (b_sample.is_delta) continue; //don't nee since it's delta, use bsdf only
+            hit_specular = b_sample.is_delta;
 
             //sample a direct light source via NEE
-            if (num_lights == 0) continue;
+            if (num_lights == 0 || hit_specular) continue; //if no lights, or delta, dont nee
             int light_index = random_int(0, num_lights - 1);
             auto& chosen_light_ptr = lights.objects[light_index];
             auto* chosen_light = dynamic_cast<light*>(chosen_light_ptr.get());
@@ -238,7 +245,7 @@ private:
             double pdf_l = l_sample.p_solid_angle * 1.0/num_lights;
             //TODO this is just uniform random picking of lights possibly change later
             color f_s_l = b.f_s(wo, l_sample.wi);
-            double cos_theta_l = dot(rec.normal, l_sample.wi);
+            double cos_theta_l = std::abs(dot(rec.normal, l_sample.wi)); //another factor from rendering eq
             //TODO if you ever have transparent stuff that uses NEE will have to change this to absolute as well and make the shadow ray actually traced through refracts and stuff... this is why we want bdpt
             direct_color = f_s_l * cos_theta_l * l_sample.emitted / pdf_l;
 
@@ -247,7 +254,13 @@ private:
             double pl_bsdf = b.pdf(wo, l_sample.wi);
             double w_light = power_heuristic(pl_light, pl_bsdf);
             outgoing_radiance += throughput * w_light * direct_color;
+            //debug+="NEE CONTRIBUTION: added " + (throughput * w_light * direct_color).to_string() + "\n";
         }
+        /*if (outgoing_radiance.length_squared() >= 5)
+        {
+            debug+="RETURNING FINAL COLOR: " + outgoing_radiance.to_string() + "\n";
+            std::clog << debug << std::endl;
+        }*/
         return outgoing_radiance;
     }
 
@@ -269,7 +282,7 @@ private:
         int num_lights = lights.objects.size();
 
         //BSDF sampling
-        bsdf b = rec.mat->create_bsdf(rec);
+        bsdf b = rec.mat->create_bsdf(rec, r);
         vec3 wo = unit_vector(-r.direction());
         bsdf_sample b_sample = b.sample(wo);
         vec3 wi = b_sample.wi; //is in the same hemisphere as the normal
@@ -297,12 +310,6 @@ private:
             next = ray_color(scattered, depth - 1, world, lights);
             indirect_color = throughput_change * next;
         }
-
-        //debugging bsdf
-        //std::clog << "f: " << b_sample.f << " cos: " << cos_theta_x << " pdf: " << b_sample.pdf << std::endl;
-        //std::clog << "throughput_change: " << throughput_change << " next bounce returned: " << next << std::endl;
-        //std::clog << "color_from_emission: " << color_from_emission << " indirect_color: " << indirect_color << std::endl;
-        //return color_from_emission + indirect_color;
 
         if (b_sample.is_delta)
         {
@@ -361,12 +368,6 @@ private:
         double pl_light = l_sample.p_solid_angle * 1.0/num_lights;
         double pl_bsdf = b.pdf(wo, l_sample.wi);
         double w_light = power_heuristic(pl_light, pl_bsdf);
-
-        //std::clog << "bsdf weight: " << w_bsdf << std::endl;
-        //std::clog << "light weight: " << w_light << std::endl;
-
-        //std::clog << "indirect: " << indirect_color << std::endl;
-        //std::clog << "direct: " << direct_color << std::endl;
 
         color result = color_from_emission + w_bsdf * indirect_color + w_light * direct_color;
         return result;

@@ -6,7 +6,7 @@
 #define MATERIAL_H
 
 #include "color.h"
-#include "hittable.h"
+#include "spectrum.h"
 #include "bxdf.h"
 
 class material
@@ -14,7 +14,7 @@ class material
 public:
     virtual ~material() = default;
 
-    virtual bsdf create_bsdf(const hit_record& rec) const
+    virtual bsdf create_bsdf(const hit_record& rec, const ray& r) const
     {
         return bsdf{rec};
     }
@@ -30,7 +30,7 @@ class lambertian : public material
 public:
     lambertian(const color& albedo) : albedo(albedo) {}
 
-    bsdf create_bsdf(const hit_record& rec) const override
+    bsdf create_bsdf(const hit_record& rec, const ray& r) const override
     {
         bsdf b = bsdf{rec};
         b.add<lambertian_reflection>(albedo);
@@ -44,33 +44,15 @@ private:
     color albedo;
 };
 
-struct complex_ior
-{
-    double eta;
-    double k;
-};
-
-namespace Metal
-{
-    static constexpr complex_ior steel{2.485, 3.433};
-    static constexpr complex_ior silver{0.177, 3.638};
-    static constexpr complex_ior gold{0.37, 2.82};
-    static constexpr complex_ior copper{0.617, 2.63};
-}
-
 class metal : public material
 {
 public:
-    explicit metal(const complex_ior& i) : eta_i(1.0), eta_t(i.eta), k_t(i.k),
-    f(1.0, eta_t, k_t), albedo(color(1, 1, 1)), fuzz(1) {}
-    metal(const complex_ior& i, const color& albedo) : eta_i(1.0), eta_t(i.eta), k_t(i.k),
-    f(1.0, eta_t, k_t), albedo(albedo), fuzz(1) {}
-    metal(const double eta_t, const double k_t, const color& albedo, double fuzz) :
-    eta_i(1.0), eta_t(eta_t), k_t(k_t), f(eta_i, eta_t, k_t), albedo(albedo), fuzz(fuzz < 1 ? fuzz : 1)
-    {}
-    metal(const double eta_i, const double eta_t, const double k_t, const color& albedo, double fuzz) :
-    eta_i(eta_i), eta_t(eta_t), k_t(k_t), f(eta_i, eta_t, k_t), albedo(albedo), fuzz(fuzz < 1 ? fuzz : 1)
-    {}
+    explicit metal(const complex_ior& i) : eta_i(1.0), f(1.0, i), albedo(color(1, 1, 1)), fuzz(1) {}
+    metal(const complex_ior& i, const color& albedo) : eta_i(1.0), f(1.0, i), albedo(albedo), fuzz(1) {}
+    metal(const complex_ior& i, const color& albedo, double fuzz) :
+    eta_i(1.0), f(1.0, i), albedo(albedo), fuzz(fuzz < 1 ? fuzz : 1) {}
+    metal(const double eta_i, const complex_ior& i, const color& albedo, double fuzz) :
+    eta_i(eta_i), f(eta_i, i), albedo(albedo), fuzz(fuzz < 1 ? fuzz : 1) {}
 
     bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const
     {
@@ -83,7 +65,7 @@ public:
         //if ray 'scattered' is pointed inside surface then discard
         return (dot(scattered.direction(), rec.normal) > 0);
     }
-    bsdf create_bsdf(const hit_record& rec) const override
+    bsdf create_bsdf(const hit_record& rec, const ray& r) const override
     {
         bsdf b = bsdf{rec};
         b.add<specular_reflection>(albedo, &f);
@@ -117,10 +99,17 @@ public:
                 ", with eta = " + std::to_string(eta_b) + " in medium with eta = " + std::to_string(eta_a);
     }
 
-    bsdf create_bsdf(const hit_record& rec) const override
+    bsdf create_bsdf(const hit_record& rec, const ray& r) const override
     {
         bsdf b = bsdf{rec};
-        b.add<fresnel_specular>(reflection_color, transmission_color, eta_a, eta_b);
+        vec3 wo = unit_vector(-r.direction());
+        if (dot(wo, rec.outward_normal()) < 0) //not on the same side
+        {
+            b.add<fresnel_specular>(reflection_color, transmission_color, eta_b, eta_a);
+        }else
+        {
+            b.add<fresnel_specular>(reflection_color, transmission_color, eta_a, eta_b);
+        }
         return b;
     }
 private:

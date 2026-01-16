@@ -4,29 +4,33 @@
 
 #ifndef FRESNEL_H
 #define FRESNEL_H
-#include "color.h"
+#include "spectrum.h"
 
 class fresnel
 {
 public:
     virtual ~fresnel() = default;
 
-    virtual double evaluate(double cos_i) const = 0;
+    virtual color evaluate(double cos_i) const = 0;
 };
 
 class fresnel_conductor : public fresnel
 {
 public:
-    fresnel_conductor(double eta_i, double eta_t, double k) : eta_i(eta_i), eta_t(eta_t), k_t(k) {}
+    fresnel_conductor(const double eta_i, const complex_ior& i) : eta_i(eta_i), i(i) {}
 
-    double evaluate(double cos_theta_i) const override
+    color evaluate(double cos_theta_i) const override
     {
-        return Fr_conductor(cos_theta_i);
+        double r_red = Fr_conductor(cos_theta_i, i.etas[0], i.ks[0]);
+        double r_green = Fr_conductor(cos_theta_i, i.etas[1], i.ks[1]);
+        double r_blue = Fr_conductor(cos_theta_i, i.etas[2], i.ks[2]);
+        return {r_red, r_green, r_blue};
     }
 private:
-    double eta_i, eta_t, k_t;
+    const complex_ior& i;
+    double eta_i;
 
-    double Fr_conductor(double cos_theta_i) const{
+    double Fr_conductor(double cos_theta_i, double eta_t, double k_t) const{
         //does cos_theta_i always need to be positive like for dielectrics
         double eta = eta_t / eta_i;
         double k = k_t / eta_i;
@@ -54,9 +58,9 @@ class fresnel_dielectric : public fresnel
 public:
     fresnel_dielectric(double eta_above, double eta_below) : eta_a(eta_above), eta_b(eta_below) {}
 
-    double evaluate(double cos_theta_i) const override
+    color evaluate(double cos_theta_i) const override
     {
-        return Fr_dielectric(cos_theta_i);
+        return color(1, 1, 1) * Fr_dielectric(cos_theta_i);
     }
 private:
     double eta_a; //a for above

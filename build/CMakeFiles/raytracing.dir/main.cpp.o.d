@@ -1054,6 +1054,7 @@ CMakeFiles/raytracing.dir/main.cpp.o: \
   /Users/fayeyu/CLionProjects/raytracing/hittable_list.h \
   /Users/fayeyu/CLionProjects/raytracing/hittable.h \
   /Users/fayeyu/CLionProjects/raytracing/material.h \
+  /Users/fayeyu/CLionProjects/raytracing/spectrum.h \
   /Users/fayeyu/CLionProjects/raytracing/bxdf.h \
   /Users/fayeyu/CLionProjects/raytracing/fresnel.h \
   /Users/fayeyu/CLionProjects/raytracing/hit_record.h \

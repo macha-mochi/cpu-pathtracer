@@ -33,7 +33,7 @@ void make_big_scene()
                     // metal
                     auto albedo = color::random(0.5, 1);
                     auto fuzz = random_double(0, 0.5);
-                    sphere_material = make_shared<metal>(Metal::silver.eta, Metal::silver.k, albedo, fuzz);
+                    sphere_material = make_shared<metal>(Metal::steel, albedo, fuzz);
                     world.add(make_shared<sphere>(center, 0.2, sphere_material));
                 } else {
                     // glass
@@ -79,12 +79,13 @@ void make_small_test_scene()
     hittable_list world;
 
     auto material_ground = make_shared<lambertian>(color(0.8, 0.8, 0.0));
-    auto material_center = make_shared<lambertian>(color(0.1, 0.2, 0.5));
-    //auto material_left = make_shared<metal>(color(0.8, 0.8, 0.8), 0.3);
+    //auto material_center = make_shared<lambertian>(color(0.1, 0.2, 0.5));
+    auto material_center = make_shared<metal>(Metal::copper);
+    //auto material_left = make_shared<metal>(Metal::steel);
     auto material_left = make_shared<dielectric>(1.50);
     auto material_bubble = make_shared<dielectric>(1.00 / 1.50);
     //auto material_right = make_shared<metal>(color(0.8, 0.6, 0.2), 1.0);
-    auto material_right = make_shared<metal>(Metal::gold, color(0.8, 0.6, 0.2));
+    auto material_right = make_shared<metal>(Metal::gold);
 
     //ground
     world.add(make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
@@ -251,22 +252,25 @@ void cornell_box() {
     auto red   = make_shared<lambertian>(color(.65, .05, .05));
     auto white = make_shared<lambertian>(color(.73, .73, .73));
     auto green = make_shared<lambertian>(color(.12, .45, .15));
-    auto light_mat = make_shared<diffuse_light>(color(20, 20, 20), color(1.0, 1.0, 1.0));
+    auto light_mat = make_shared<diffuse_light>(color(5, 5, 5), color(1.0, 1.0, 1.0));
     auto metal_mat = make_shared<metal>(Metal::silver);
     auto glass = make_shared<dielectric>(1.5);
 
     world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
     world.add(make_shared<quad>(point3(0,0,0), vec3(0,555,0), vec3(0,0,555), red));
-    //auto small_l = make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light_mat);
+    auto small_l = make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light_mat);
+    auto ql = make_shared<quad_light>(small_l, light_mat);
+    world.add(ql);
+    lights.add(ql);
     //auto big_l = make_shared<quad>(point3(278+200, 554, 278+200), vec3(-400,0,0), vec3(0,0,-400), light_mat);
-    auto l1 = make_shared<quad>(point3(443, 554, 432), vec3(-80,0,0), vec3(0,0,-80), light_mat);
+    /*auto l1 = make_shared<quad>(point3(443, 554, 432), vec3(-80,0,0), vec3(0,0,-80), light_mat);
     auto l2 = make_shared<quad>(point3(143, 554, 132), vec3(-80,0,0), vec3(0,0,-80), light_mat);
     auto ql1 = make_shared<quad_light>(l1, light_mat);
     auto ql2 = make_shared<quad_light>(l2, light_mat);
     world.add(ql1);
     world.add(ql2);
     lights.add(ql1);
-    lights.add(ql2);
+    lights.add(ql2);*/
     world.add(make_shared<quad>(point3(0,0,0), vec3(555,0,0), vec3(0,0,555), white));
     world.add(make_shared<quad>(point3(555,555,555), vec3(-555,0,0), vec3(0,0,-555), white));
     world.add(make_shared<quad>(point3(0,0,555), vec3(555,0,0), vec3(0,555,0), white));
@@ -274,15 +278,15 @@ void cornell_box() {
     shared_ptr<hittable> bigger_box = box(point3(0,0,0), point3(165,330,165), white);
     bigger_box = make_shared<rotate_y>(bigger_box, -15);
     bigger_box = make_shared<translate>(bigger_box, vec3(130,0,265));
-    world.add(bigger_box);
+    //world.add(bigger_box);
 
     shared_ptr<hittable> smaller_box = box(point3(0,0,0), point3(165,165,165), white);
     smaller_box = make_shared<rotate_y>(smaller_box, 18);
     smaller_box = make_shared<translate>(smaller_box, vec3( 265,0,130));
-    world.add(smaller_box);
+    //world.add(smaller_box);
 
     //world.add(make_shared<sphere>(point3(300, 300, 300), 70, metal_mat));
-    //world.add(make_shared<sphere>(point3(450, 300, 300), 70, glass));
+    world.add(make_shared<sphere>(point3(450, 300, 300), 70, glass));
 
     world = hittable_list(make_shared<bvh_node>(world));
 
@@ -290,9 +294,8 @@ void cornell_box() {
 
     cam.aspect_ratio      = 1.0;
     cam.image_width       = 256;
-    cam.samples_per_pixel = 16;
-    cam.max_depth         = 3;
-    //cam.background        = color(0.5,0.5,0.8);
+    cam.samples_per_pixel = 4;
+    cam.max_depth         = 8;
     cam.background = color(0, 0, 0);
 
     cam.vfov     = 40;
@@ -311,7 +314,7 @@ void cornell_box() {
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    switch (2)
+    switch (7)
     {
         case 1: make_big_scene(); break;
         case 2: make_small_test_scene(); break;
