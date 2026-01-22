@@ -134,10 +134,10 @@ inline vec3 random_on_hemisphere(const vec3& normal){
     if(dot(rand, normal) > 0.0) return rand;
     return -rand;
 }
-//this func assumes that v is pointed at the shading point and not away from it
+//this func assumes that v is pointed away from shading point
 inline vec3 reflect(const vec3& v, const vec3& n)
 {
-    return v - 2*dot(n, v)*n;
+    return -v + 2*dot(n, v)*n;
 }
 //returns false if no valid transmission, otherwise the transmission direction is wt
 //if wi and n are not in the same hemi, n will be flipped so they are

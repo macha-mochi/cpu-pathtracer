@@ -252,7 +252,7 @@ void cornell_box() {
     auto red   = make_shared<lambertian>(color(.65, .05, .05));
     auto white = make_shared<lambertian>(color(.73, .73, .73));
     auto green = make_shared<lambertian>(color(.12, .45, .15));
-    auto light_mat = make_shared<diffuse_light>(color(5, 5, 5), color(1.0, 1.0, 1.0));
+    auto light_mat = make_shared<diffuse_light>(color(10, 10, 10), color(1.0, 1.0, 1.0));
     auto metal_mat = make_shared<metal>(Metal::silver);
     auto glass = make_shared<dielectric>(1.5);
 
@@ -285,8 +285,8 @@ void cornell_box() {
     smaller_box = make_shared<translate>(smaller_box, vec3( 265,0,130));
     //world.add(smaller_box);
 
-    //world.add(make_shared<sphere>(point3(300, 300, 300), 70, metal_mat));
-    world.add(make_shared<sphere>(point3(450, 300, 300), 70, glass));
+    world.add(make_shared<sphere>(point3(300, 300, 300), 70, metal_mat));
+    //world.add(make_shared<sphere>(point3(450, 300, 300), 70, glass));
 
     world = hittable_list(make_shared<bvh_node>(world));
 
@@ -294,8 +294,8 @@ void cornell_box() {
 
     cam.aspect_ratio      = 1.0;
     cam.image_width       = 256;
-    cam.samples_per_pixel = 4;
-    cam.max_depth         = 8;
+    cam.samples_per_pixel = 8;
+    cam.max_depth         = 4;
     cam.background = color(0, 0, 0);
 
     cam.vfov     = 40;

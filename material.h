@@ -47,19 +47,21 @@ private:
 class metal : public material
 {
 public:
-    explicit metal(const complex_ior& i) : eta_i(1.0), f(1.0, i), albedo(color(1, 1, 1)), fuzz(1) {}
-    metal(const complex_ior& i, const color& albedo) : eta_i(1.0), f(1.0, i), albedo(albedo), fuzz(1) {}
-    metal(const complex_ior& i, const color& albedo, double fuzz) :
-    eta_i(1.0), f(1.0, i), albedo(albedo), fuzz(fuzz < 1 ? fuzz : 1) {}
-    metal(const double eta_i, const complex_ior& i, const color& albedo, double fuzz) :
-    eta_i(eta_i), f(eta_i, i), albedo(albedo), fuzz(fuzz < 1 ? fuzz : 1) {}
+    explicit metal(const complex_ior& i) : eta_i(1.0), f(1.0, i), albedo(color(1, 1, 1)),
+    roughness(1), mf_dist(1, 1) {}
+    metal(const complex_ior& i, const color& albedo) : eta_i(1.0), f(1.0, i), albedo(albedo),
+    roughness(1), mf_dist(1, 1) {}
+    metal(const complex_ior& i, const color& albedo, double r) :
+    eta_i(1.0), f(1.0, i), albedo(albedo), roughness(r < 1 ? r : 1), mf_dist(roughness, roughness) {}
+    metal(const double eta_i, const complex_ior& i, const color& albedo, double r) :
+    eta_i(eta_i), f(eta_i, i), albedo(albedo), roughness(r < 1 ? r : 1), mf_dist(roughness, roughness) {}
 
     bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const
     {
         vec3 reflected = reflect(r_in.direction(), rec.normal);
         // normalize the 'reflected' vector and add a random vector on unit sphere
         // to make the reflection not as perfect (to add fuzz)
-        reflected = unit_vector(reflected) + fuzz * random_unit_vector();
+        reflected = unit_vector(reflected) + roughness * random_unit_vector();
         scattered = ray(rec.p, reflected);
         attenuation = albedo;
         //if ray 'scattered' is pointed inside surface then discard
@@ -68,7 +70,7 @@ public:
     bsdf create_bsdf(const hit_record& rec, const ray& r) const override
     {
         bsdf b = bsdf{rec};
-        b.add<specular_reflection>(albedo, &f);
+        b.add<conductor>(mf_dist, albedo, f);
         return b;
     }
     std::string to_string() const override
@@ -79,8 +81,9 @@ public:
 private:
     double eta_i, eta_t, k_t;
     color albedo;
-    double fuzz;
+    double roughness;
     const fresnel_conductor f;
+    const trowbridge_reitz_distribution mf_dist;
 };
 
 class dielectric : public material

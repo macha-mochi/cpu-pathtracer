@@ -4,8 +4,11 @@
 
 #ifndef BXDF_H
 #define BXDF_H
+#include <utility>
+
 #include "fresnel.h"
 #include "hit_record.h"
+#include "trowbridge_reitz_distribution.h"
 
 enum bxdf_flags
 {
@@ -277,6 +280,70 @@ private:
     color t_scale_factor;
     double eta_a, eta_b; //above = the side the surface normal is in, below = the other side
     fresnel_dielectric fresnel;
+};
+
+class conductor : public bxdf
+{
+public:
+    conductor(const trowbridge_reitz_distribution& d, const color& albedo, fresnel_conductor f) :
+    mf_dist(d), albedo(albedo), fresnel(std::move(f))
+    {
+        flags = mf_dist.act_as_smooth() ? SpecularReflection : GlossyReflection;
+    }
+    color f_s(const vec3& wo, const vec3& wi) const override
+    {
+        if (mf_dist.act_as_smooth())
+        {
+            return color(0,0,0); //nothing scatters in any direction except the one light reflects in
+        }
+        vec3 wm = (wo+wi);
+        if (wm.length_squared() <= 1e-8) return color(0, 0, 0); //wo and wi in opposite directions
+        wm = unit_vector(wm);
+        if (dot(wm, n) < 0) wm = -wm;
+
+        double cos_theta_o = abs(wo.z());
+        double cos_theta_i = abs(wi.z());
+        if (cos_theta_o <= 1e-9 || cos_theta_i <= 1e-9) return color(0, 0, 0); //avoid nans
+
+        color f_temp = mf_dist.D(wm) * fresnel.evaluate(dot(wo, wm)) * mf_dist.G(wo, wi);
+        return f_temp * 1 / (4 * cos_theta_o * cos_theta_i);
+    }
+    double pdf(const vec3& wo, const vec3& wi) const override
+    {
+        if (mf_dist.act_as_smooth())
+        {
+            return 0.0; //we don't use a pdf for speculars bc there's only one correct direction we can calculate
+        }
+
+        vec3 wm = (wo+wi);
+        if (wm.length_squared() <= 1e-8) return 0; //wo and wi in opposite directions
+        wm = unit_vector(wm);
+        if (dot(wm, n) < 0) wm = -wm;
+        return mf_dist.pdf(wo, wm) / 4 * dot(wo, wm);
+    }
+    //wo is a unit vector in render space alr, pointing away from shading point
+    bsdf_sample sample(const vec3& wo) override
+    {
+        if (mf_dist.act_as_smooth())
+        {
+            //theta is angle between incoming ray and normal
+            double cos_theta = std::fmin(dot(wo, n), 1.0);
+            cos_theta = std::abs(cos_theta);
+
+            color reflectance = fresnel.evaluate(cos_theta);
+            vec3 wi = vec3(-wo.x(), -wo.y(), wo.z());
+            color f_s = reflectance / cos_theta; //im p sure cos_theta_i = cos_theta_r
+            return bsdf_sample(wi, albedo * f_s, 1, true);
+        }
+
+        vec3 wm = mf_dist.sample_wm(wo);
+        vec3 wi = reflect(wo, wm);
+        return bsdf_sample(wi, albedo * f_s(wo, wi), pdf(wo, wi), false);
+    }
+private:
+    const trowbridge_reitz_distribution& mf_dist;
+    color albedo;
+    fresnel_conductor fresnel;
 };
 
 class bsdf

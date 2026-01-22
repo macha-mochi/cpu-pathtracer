@@ -28,5 +28,6 @@ add_executable(raytracing main.cpp
         light.h
         hit_record.h
         spectrum.h
+        trowbridge_reitz_distribution.h
 )
 target_link_libraries(raytracing PRIVATE OpenMP::OpenMP_CXX)
