@@ -159,7 +159,7 @@ private:
 
     color ray_color_iter(const ray& camera_ray, int depth, const hittable& world, const hittable_list& lights)
     {
-        //std::string debug = "";
+        std::string debug = "";
         color throughput = color(1, 1, 1);
         color outgoing_radiance = color(0, 0, 0);
         int num_lights = lights.objects.size();
@@ -196,9 +196,9 @@ private:
                 } //if didn't hit a light on the emitting side, w_bsdf stays at 1
                 throughput = throughput * w_bsdf * (f_s * cos_theta_i / pdf_b);
 
-                /*
+
                 debug+= "CALCULATING THROUGHPUT: f: " + f_s.to_string() + " cos: " + std::to_string(cos_theta_i) + " pdf: " + std::to_string(pdf_b) + "\n";
-                debug+="w_bsdf: " + std::to_string(w_bsdf) + " change in throughput = " + (w_bsdf * (f_s * cos_theta_i / pdf_b)).to_string() + "\n";
+                /*debug+="w_bsdf: " + std::to_string(w_bsdf) + " change in throughput = " + (w_bsdf * (f_s * cos_theta_i / pdf_b)).to_string() + "\n";
                 debug+="THROUGHPUT IS " + throughput.to_string() + "\n";*/
             }
 
@@ -211,8 +211,9 @@ private:
             //Le term
             color color_from_emission = rec.front_face ? rec.mat->emitted() : color(0, 0, 0);
             outgoing_radiance += throughput * color_from_emission;
-            /*debug+="hit material: " + rec.mat->to_string() + "\n";
-            if (color_from_emission.length_squared() > 1e-8)
+            debug+="hit material: " + rec.mat->to_string() + " front: " + std::to_string(rec.front_face) + "\n";
+            debug+="origin: " + r.origin().to_string() + " hit: " + rec.p.to_string() + "\n";
+            /*if (color_from_emission.length_squared() > 1e-8)
             {
                 debug+="EMISSION CONTRIBUTION: added " + (throughput * color_from_emission).to_string() + "\n";
             }*/
@@ -256,11 +257,11 @@ private:
             outgoing_radiance += throughput * w_light * direct_color;
             //debug+="NEE CONTRIBUTION: added " + (throughput * w_light * direct_color).to_string() + "\n";
         }
-        /*if (outgoing_radiance.length_squared() >= 5)
+        if (outgoing_radiance.length_squared() >= 5)
         {
             debug+="RETURNING FINAL COLOR: " + outgoing_radiance.to_string() + "\n";
-            std::clog << debug << std::endl;
-        }*/
+            //std::clog << debug << std::endl;
+        }
         return outgoing_radiance;
     }
 

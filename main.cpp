@@ -253,7 +253,7 @@ void cornell_box() {
     auto white = make_shared<lambertian>(color(.73, .73, .73));
     auto green = make_shared<lambertian>(color(.12, .45, .15));
     auto light_mat = make_shared<diffuse_light>(color(10, 10, 10), color(1.0, 1.0, 1.0));
-    auto metal_mat = make_shared<metal>(Metal::silver);
+    auto metal_mat = make_shared<metal>(Metal::silver, color(1, 1, 1), 0.5);
     auto glass = make_shared<dielectric>(1.5);
 
     world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
@@ -294,8 +294,8 @@ void cornell_box() {
 
     cam.aspect_ratio      = 1.0;
     cam.image_width       = 256;
-    cam.samples_per_pixel = 8;
-    cam.max_depth         = 4;
+    cam.samples_per_pixel = 32;
+    cam.max_depth         = 8;
     cam.background = color(0, 0, 0);
 
     cam.vfov     = 40;

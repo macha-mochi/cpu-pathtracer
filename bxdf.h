@@ -296,6 +296,10 @@ public:
         {
             return color(0,0,0); //nothing scatters in any direction except the one light reflects in
         }
+        if (wi.z() < 0) //wi is into the metal, should not happen
+        {
+            return color(0, 0, 0);
+        }
         vec3 wm = (wo+wi);
         if (wm.length_squared() <= 1e-8) return color(0, 0, 0); //wo and wi in opposite directions
         wm = unit_vector(wm);
@@ -305,8 +309,11 @@ public:
         double cos_theta_i = abs(wi.z());
         if (cos_theta_o <= 1e-9 || cos_theta_i <= 1e-9) return color(0, 0, 0); //avoid nans
 
-        color f_temp = mf_dist.D(wm) * fresnel.evaluate(dot(wo, wm)) * mf_dist.G(wo, wi);
-        return f_temp * 1 / (4 * cos_theta_o * cos_theta_i);
+        color f = mf_dist.D(wm) * fresnel.evaluate(dot(wo, wm)) * mf_dist.G(wo, wi);
+        //std::clog << "f_temp: " << f << std::endl;
+        f *= 1 / (4 * cos_theta_o * cos_theta_i);
+        //std::clog << "f final: " << f << std::endl;
+        return f;
     }
     double pdf(const vec3& wo, const vec3& wi) const override
     {
@@ -314,6 +321,7 @@ public:
         {
             return 0.0; //we don't use a pdf for speculars bc there's only one correct direction we can calculate
         }
+        //if wi is into the metal: shoudl be impossible but if u return pdf of 0 you'll get nans so just leave it
 
         vec3 wm = (wo+wi);
         if (wm.length_squared() <= 1e-8) return 0; //wo and wi in opposite directions
@@ -338,6 +346,10 @@ public:
 
         vec3 wm = mf_dist.sample_wm(wo);
         vec3 wi = reflect(wo, wm);
+        if (wi.z() < 0)
+        {
+            return bsdf_sample(wi, color(0, 0, 0), pdf(wo, wi), false);
+        }
         return bsdf_sample(wi, albedo * f_s(wo, wi), pdf(wo, wi), false);
     }
 private:

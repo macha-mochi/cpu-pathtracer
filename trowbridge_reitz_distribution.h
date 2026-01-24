@@ -65,8 +65,7 @@ public:
         point3 p = random_in_unit_disk();
 
         //create orthonormal basis with w_hemi as normal
-        vec3 n = vec3(0, 0, 1);
-        vec3 t1 = (w_hemi.z() < 0.9999f) ? cross(n, w_hemi) : vec3(1, 0, 0); //t1 is perpendicular to n AND w_hemi
+        vec3 t1 = (w_hemi.z() < 0.9999f) ? cross(vec3(0, 0, 1), w_hemi) : vec3(1, 0, 0); //t1 is perpendicular to n AND w_hemi
         vec3 t2 = cross(w_hemi, t1);
 
         //transform p onto the squashed projected disk
@@ -87,21 +86,14 @@ private:
 
     double lambda(const vec3& w) const
     {
-        double alpha2 = 0;
         double cos2theta = w.z() * w.z();
         double sin2theta = 1 - cos2theta;
         double tan2theta = sin2theta / cos2theta;
-        if (std::abs(alpha_x - alpha_y) <= 1e-6)
-        {
-            //basically same
-            alpha2 = alpha_x * alpha_y;
-        }else
-        {
-            double cos2phi = w.x() * w.x() / sin2theta;
-            double sin2phi = 1 - cos2phi;
 
-            alpha2 = alpha_x * alpha_x * cos2phi + alpha_y * alpha_y * sin2phi;
-        }
+        double cos2phi = w.x() * w.x() / sin2theta;
+        double sin2phi = 1 - cos2phi;
+        double alpha2 = alpha_x * alpha_x * cos2phi + alpha_y * alpha_y * sin2phi;
+
         return (sqrt(1 + alpha2 * tan2theta) - 1)/2;
     }
 };

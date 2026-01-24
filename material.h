@@ -8,7 +8,10 @@
 #include "color.h"
 #include "spectrum.h"
 #include "bxdf.h"
-
+enum material_type
+{
+    Lambertian, Metallic, Dielectric
+};
 class material
 {
 public:
@@ -42,19 +45,20 @@ public:
     }
 private:
     color albedo;
+    const material_type type = Lambertian;
 };
 
 class metal : public material
 {
 public:
     explicit metal(const complex_ior& i) : eta_i(1.0), f(1.0, i), albedo(color(1, 1, 1)),
-    roughness(1), mf_dist(1, 1) {}
+    roughness(0), mf_dist(0, 0) {}
     metal(const complex_ior& i, const color& albedo) : eta_i(1.0), f(1.0, i), albedo(albedo),
-    roughness(1), mf_dist(1, 1) {}
+    roughness(0), mf_dist(0, 0) {}
     metal(const complex_ior& i, const color& albedo, double r) :
-    eta_i(1.0), f(1.0, i), albedo(albedo), roughness(r < 1 ? r : 1), mf_dist(roughness, roughness) {}
+    eta_i(1.0), f(1.0, i), albedo(albedo), roughness(r < 1 ? r : 1), mf_dist(roughness * roughness, roughness * roughness) {}
     metal(const double eta_i, const complex_ior& i, const color& albedo, double r) :
-    eta_i(eta_i), f(eta_i, i), albedo(albedo), roughness(r < 1 ? r : 1), mf_dist(roughness, roughness) {}
+    eta_i(eta_i), f(eta_i, i), albedo(albedo), roughness(r < 1 ? r : 1), mf_dist(roughness * roughness, roughness * roughness) {}
 
     bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const
     {
@@ -84,6 +88,7 @@ private:
     double roughness;
     const fresnel_conductor f;
     const trowbridge_reitz_distribution mf_dist;
+    const material_type type = Metallic;
 };
 
 class dielectric : public material
@@ -121,6 +126,7 @@ private:
     color reflection_color;
     color transmission_color;
     double eta_a, eta_b; //above = the side the surface normal is in/enclosing medium, below = the other side/entered medium
+    const material_type type = Dielectric;
 
     static double schlick_reflectance(double cosine, double refraction_index)
     {
