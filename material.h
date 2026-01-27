@@ -26,6 +26,7 @@ public:
         return color(0, 0, 0); //default emit is black
     }
     virtual std::string to_string() const = 0;
+    virtual material_type get_type() const = 0;
 };
 
 class lambertian : public material
@@ -43,6 +44,7 @@ public:
     {
         return "Lambertian with albedo " + albedo.to_string();
     }
+    material_type get_type() const override {return type;}
 private:
     color albedo;
     const material_type type = Lambertian;
@@ -55,10 +57,12 @@ public:
     roughness(0), mf_dist(0, 0) {}
     metal(const complex_ior& i, const color& albedo) : eta_i(1.0), f(1.0, i), albedo(albedo),
     roughness(0), mf_dist(0, 0) {}
-    metal(const complex_ior& i, const color& albedo, double r) :
-    eta_i(1.0), f(1.0, i), albedo(albedo), roughness(r < 1 ? r : 1), mf_dist(roughness * roughness, roughness * roughness) {}
-    metal(const double eta_i, const complex_ior& i, const color& albedo, double r) :
-    eta_i(eta_i), f(eta_i, i), albedo(albedo), roughness(r < 1 ? r : 1), mf_dist(roughness * roughness, roughness * roughness) {}
+    metal(const complex_ior& i, const color& albedo, double r, double a) :
+    eta_i(1.0), f(1.0, i), albedo(albedo), roughness(r < 1 ? r : 1), anisotropy(a < 1 ? a : 1),
+    mf_dist(get_alpha_x(), get_alpha_y()) {}
+    metal(const double eta_i, const complex_ior& i, const color& albedo, double r, double a) :
+    eta_i(eta_i), f(eta_i, i), albedo(albedo), roughness(r < 1 ? r : 1), anisotropy(a < 1 ? a : 1),
+    mf_dist(get_alpha_x(), get_alpha_y()) {}
 
     bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const
     {
@@ -81,14 +85,25 @@ public:
     {
         return "Metal with albedo " + albedo.to_string();
     }
+    material_type get_type() const override {return type;}
 
 private:
     double eta_i, eta_t, k_t;
     color albedo;
     double roughness;
+    double anisotropy;
     const fresnel_conductor f;
     const trowbridge_reitz_distribution mf_dist;
     const material_type type = Metallic;
+
+    float get_alpha_x()
+    {
+        return roughness * roughness / std::sqrt(1 - 0.9 * anisotropy);
+    }
+    float get_alpha_y()
+    {
+        return roughness * roughness * std::sqrt(1 - 0.9 * anisotropy);
+    }
 };
 
 class dielectric : public material
@@ -120,6 +135,7 @@ public:
         }
         return b;
     }
+    material_type get_type() const override {return type;}
 private:
     //refractive index in vacuum or air, or the ratio of the material's refractive index
     //over the refractive index of the enclosing media

@@ -169,6 +169,10 @@ private:
         double cos_theta_i;
         double pdf_b;
         bool hit_specular = false;
+
+        bool glancing_metal = false;
+        bool first_hit_metal = false;
+
         for (int i = 0; i < depth; i++)
         {
             if (russian_roulette_termination && i >= 4)
@@ -196,10 +200,11 @@ private:
                 } //if didn't hit a light on the emitting side, w_bsdf stays at 1
                 throughput = throughput * w_bsdf * (f_s * cos_theta_i / pdf_b);
 
-
                 debug+= "CALCULATING THROUGHPUT: f: " + f_s.to_string() + " cos: " + std::to_string(cos_theta_i) + " pdf: " + std::to_string(pdf_b) + "\n";
-                /*debug+="w_bsdf: " + std::to_string(w_bsdf) + " change in throughput = " + (w_bsdf * (f_s * cos_theta_i / pdf_b)).to_string() + "\n";
-                debug+="THROUGHPUT IS " + throughput.to_string() + "\n";*/
+                debug+="w_bsdf: " + std::to_string(w_bsdf) + " change in throughput = " + (w_bsdf * (f_s * cos_theta_i / pdf_b)).to_string() + "\n";
+                debug+="THROUGHPUT IS " + throughput.to_string() + "\n";
+
+                if (throughput.length_squared() == 0) break; //no more contributions
             }
 
             if (!hit_anything)
@@ -212,7 +217,6 @@ private:
             color color_from_emission = rec.front_face ? rec.mat->emitted() : color(0, 0, 0);
             outgoing_radiance += throughput * color_from_emission;
             debug+="hit material: " + rec.mat->to_string() + " front: " + std::to_string(rec.front_face) + "\n";
-            debug+="origin: " + r.origin().to_string() + " hit: " + rec.p.to_string() + "\n";
             /*if (color_from_emission.length_squared() > 1e-8)
             {
                 debug+="EMISSION CONTRIBUTION: added " + (throughput * color_from_emission).to_string() + "\n";
@@ -225,6 +229,8 @@ private:
             vec3 wi = b_sample.wi; //is in the same hemisphere as the normal
             f_s = b_sample.f;
             cos_theta_i = std::abs(dot(wi, rec.normal)); //bc the cos(theta) just represents a ratio of areas
+            if (rec.mat->get_type() == Metallic && cos_theta_i < 0.15f) glancing_metal = true;
+            if (rec.mat->get_type() == Metallic && i == 0) first_hit_metal = true;
             pdf_b = b_sample.pdf;
             r = ray(rec.p, wi);
             hit_specular = b_sample.is_delta;
@@ -255,11 +261,11 @@ private:
             double pl_bsdf = b.pdf(wo, l_sample.wi);
             double w_light = power_heuristic(pl_light, pl_bsdf);
             outgoing_radiance += throughput * w_light * direct_color;
-            //debug+="NEE CONTRIBUTION: added " + (throughput * w_light * direct_color).to_string() + "\n";
+            debug+="NEE CONTRIBUTION: w_light = " + std::to_string(w_light) + " added: " + (throughput * w_light * direct_color).to_string() + "\n";
         }
-        if (outgoing_radiance.length_squared() >= 5)
+        debug+="RETURNING FINAL COLOR: " + outgoing_radiance.to_string() + "\n";
+        if (first_hit_metal && glancing_metal)
         {
-            debug+="RETURNING FINAL COLOR: " + outgoing_radiance.to_string() + "\n";
             //std::clog << debug << std::endl;
         }
         return outgoing_radiance;

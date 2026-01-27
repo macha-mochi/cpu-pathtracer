@@ -296,7 +296,7 @@ public:
         {
             return color(0,0,0); //nothing scatters in any direction except the one light reflects in
         }
-        if (wi.z() < 0) //wi is into the metal, should not happen
+        if (wi.z() <= 0) //wi is into the metal, should not happen
         {
             return color(0, 0, 0);
         }
@@ -327,7 +327,7 @@ public:
         if (wm.length_squared() <= 1e-8) return 0; //wo and wi in opposite directions
         wm = unit_vector(wm);
         if (dot(wm, n) < 0) wm = -wm;
-        return mf_dist.pdf(wo, wm) / 4 * dot(wo, wm);
+        return mf_dist.pdf(wo, wm) / (4 * dot(wo, wm));
     }
     //wo is a unit vector in render space alr, pointing away from shading point
     bsdf_sample sample(const vec3& wo) override
