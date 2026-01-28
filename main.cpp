@@ -37,14 +37,14 @@ void make_big_scene()
                     world.add(make_shared<sphere>(center, 0.2, sphere_material));
                 } else {
                     // glass
-                    sphere_material = make_shared<dielectric>(1.5);
+                    sphere_material = make_shared<dielectric>(1.5, 0);
                     world.add(make_shared<sphere>(center, 0.2, sphere_material));
                 }
             }
         }
     }
 
-    auto material1 = make_shared<dielectric>(1.5);
+    auto material1 = make_shared<dielectric>(1.5, 0);
     world.add(make_shared<sphere>(point3(0, 1, 0), 1.0, material1));
 
     auto material2 = make_shared<lambertian>(color(0.4, 0.2, 0.1));
@@ -82,8 +82,8 @@ void make_small_test_scene()
     //auto material_center = make_shared<lambertian>(color(0.1, 0.2, 0.5));
     auto material_center = make_shared<metal>(Metal::copper);
     //auto material_left = make_shared<metal>(Metal::steel);
-    auto material_left = make_shared<dielectric>(1.50);
-    auto material_bubble = make_shared<dielectric>(1.00 / 1.50);
+    auto material_left = make_shared<dielectric>(1.50, 0);
+    auto material_bubble = make_shared<dielectric>(1.00 / 1.50, 0);
     //auto material_right = make_shared<metal>(color(0.8, 0.6, 0.2), 1.0);
     auto material_right = make_shared<metal>(Metal::gold);
 
@@ -125,7 +125,7 @@ void quads()
     auto right_blue = make_shared<lambertian>(color(0.2, 0.2, 1.0));
     auto upper_orange = make_shared<lambertian>(color(1.0, 0.5, 0.0));
     auto lower_teal = make_shared<lambertian>(color(0.2, 0.8, 0.8));
-    auto glass_ball = make_shared<dielectric>(1.5);
+    auto glass_ball = make_shared<dielectric>(1.5, 0);
 
     //quads
     world.add(make_shared<quad>(point3(-3, -2, 5), vec3(0, 0, -4), vec3(0, 4, 0), left_red));
@@ -252,9 +252,9 @@ void cornell_box() {
     auto red   = make_shared<lambertian>(color(.65, .05, .05));
     auto white = make_shared<lambertian>(color(.73, .73, .73));
     auto green = make_shared<lambertian>(color(.12, .45, .15));
-    auto light_mat = make_shared<diffuse_light>(color(10, 10, 10), color(1.0, 1.0, 1.0));
-    auto metal_mat = make_shared<metal>(Metal::silver, color(1, 1, 1), 0.5, 0.8);
-    auto glass = make_shared<dielectric>(1.5);
+    auto light_mat = make_shared<diffuse_light>(10 * color(1.0, 0.9, 0.7), color(1.0, 1.0, 1.0));
+    auto metal_mat = make_shared<metal>(Metal::silver, color(1, 1, 1), 0.5, 0);
+    auto glass = make_shared<dielectric>(1.5, 0.6);
 
     world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
     world.add(make_shared<quad>(point3(0,0,0), vec3(0,555,0), vec3(0,0,555), red));
@@ -285,8 +285,8 @@ void cornell_box() {
     smaller_box = make_shared<translate>(smaller_box, vec3( 265,0,130));
     //world.add(smaller_box);
 
-    world.add(make_shared<sphere>(point3(300, 300, 300), 70, metal_mat));
-    //world.add(make_shared<sphere>(point3(450, 300, 300), 70, glass));
+    world.add(make_shared<sphere>(point3(200, 300, 300), 70, metal_mat));
+    world.add(make_shared<sphere>(point3(400, 300, 300), 70, glass));
 
     world = hittable_list(make_shared<bvh_node>(world));
 

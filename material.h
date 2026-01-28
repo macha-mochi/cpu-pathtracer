@@ -64,17 +64,6 @@ public:
     eta_i(eta_i), f(eta_i, i), albedo(albedo), roughness(r < 1 ? r : 1), anisotropy(a < 1 ? a : 1),
     mf_dist(get_alpha_x(), get_alpha_y()) {}
 
-    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered) const
-    {
-        vec3 reflected = reflect(r_in.direction(), rec.normal);
-        // normalize the 'reflected' vector and add a random vector on unit sphere
-        // to make the reflection not as perfect (to add fuzz)
-        reflected = unit_vector(reflected) + roughness * random_unit_vector();
-        scattered = ray(rec.p, reflected);
-        attenuation = albedo;
-        //if ray 'scattered' is pointed inside surface then discard
-        return (dot(scattered.direction(), rec.normal) > 0);
-    }
     bsdf create_bsdf(const hit_record& rec, const ray& r) const override
     {
         bsdf b = bsdf{rec};
@@ -109,11 +98,13 @@ private:
 class dielectric : public material
 {
 public:
-    dielectric(double eta) : reflection_color(1, 1, 1), transmission_color(1, 1, 1), eta_a(1.0), eta_b(eta){}
-    dielectric(double eta_a, double eta_b) : reflection_color(1, 1, 1), transmission_color(1, 1, 1),
-    eta_a(eta_a), eta_b(eta_b){}
-    dielectric(const color& r, const color& t, double eta_a, double eta_b) :
-    reflection_color(r), transmission_color(t), eta_a(eta_a), eta_b(eta_b) {}
+    dielectric(double eta, double r) : reflection_color(1, 1, 1), transmission_color(1, 1, 1),
+    eta_a(1.0), eta_b(eta), roughness(r < 1 ? r : 1), mf_dist(roughness * roughness, roughness * roughness){}
+    dielectric(double eta_a, double eta_b, double r) : reflection_color(1, 1, 1), transmission_color(1, 1, 1),
+    eta_a(eta_a), eta_b(eta_b), roughness(r < 1 ? r : 1), mf_dist(roughness * roughness, roughness * roughness){}
+    dielectric(const color& r, const color& t, double eta_a, double eta_b, double rough) :
+    reflection_color(r), transmission_color(t), eta_a(eta_a), eta_b(eta_b),
+    roughness(rough < 1 ? rough : 1), mf_dist(roughness * roughness, roughness * roughness) {}
 
     std::string to_string() const override
     {
@@ -128,10 +119,22 @@ public:
         vec3 wo = unit_vector(-r.direction());
         if (dot(wo, rec.outward_normal()) < 0) //not on the same side
         {
-            b.add<fresnel_specular>(reflection_color, transmission_color, eta_b, eta_a);
+            if (mf_dist.act_as_smooth())
+            {
+                b.add<fresnel_specular>(reflection_color, transmission_color, eta_b, eta_a);
+            }else
+            {
+                b.add<rough_dielectric>(reflection_color, transmission_color, eta_b, eta_a, mf_dist);
+            }
         }else
         {
-            b.add<fresnel_specular>(reflection_color, transmission_color, eta_a, eta_b);
+            if (mf_dist.act_as_smooth())
+            {
+                b.add<fresnel_specular>(reflection_color, transmission_color, eta_a, eta_b);
+            }else
+            {
+                b.add<rough_dielectric>(reflection_color, transmission_color, eta_a, eta_b, mf_dist);
+            }
         }
         return b;
     }
@@ -142,7 +145,9 @@ private:
     color reflection_color;
     color transmission_color;
     double eta_a, eta_b; //above = the side the surface normal is in/enclosing medium, below = the other side/entered medium
+    double roughness;
     const material_type type = Dielectric;
+    const trowbridge_reitz_distribution mf_dist;
 
     static double schlick_reflectance(double cosine, double refraction_index)
     {

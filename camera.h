@@ -198,13 +198,12 @@ private:
                     pb_light*=1.0/num_lights;
                     w_bsdf = power_heuristic(pb_bsdf, pb_light);
                 } //if didn't hit a light on the emitting side, w_bsdf stays at 1
+                if (f_s.length_squared() == 0 || pdf_b == 0) break; //no more contributions
                 throughput = throughput * w_bsdf * (f_s * cos_theta_i / pdf_b);
 
                 debug+= "CALCULATING THROUGHPUT: f: " + f_s.to_string() + " cos: " + std::to_string(cos_theta_i) + " pdf: " + std::to_string(pdf_b) + "\n";
                 debug+="w_bsdf: " + std::to_string(w_bsdf) + " change in throughput = " + (w_bsdf * (f_s * cos_theta_i / pdf_b)).to_string() + "\n";
                 debug+="THROUGHPUT IS " + throughput.to_string() + "\n";
-
-                if (throughput.length_squared() == 0) break; //no more contributions
             }
 
             if (!hit_anything)

@@ -25,6 +25,7 @@ enum bxdf_flags
     SpecularReflection = Reflection | Specular,
     SpecularTransmission = Transmission | Specular,
     SpecularReflTran = Specular | Reflection | Transmission,
+    GlossyReflTran = Glossy | Reflection | Transmission,
     All = Diffuse | Glossy | Specular | Reflection | Transmission
 };
 inline bool is_reflective(bxdf_flags f)
@@ -356,6 +357,138 @@ private:
     const trowbridge_reitz_distribution& mf_dist;
     color albedo;
     fresnel_conductor fresnel;
+};
+
+class rough_dielectric : public bxdf
+{
+public:
+    //assumes roughness is not 0, use specular if thats the case
+    rough_dielectric(const color& r, const color& t, double eta_a, double eta_b,
+        const trowbridge_reitz_distribution& dist) :
+    r_scale_factor(r), t_scale_factor(t), mf_dist(dist),
+        eta_a(eta_a), eta_b(eta_b), fresnel(eta_a, eta_b)
+    {
+        flags = GlossyReflTran;
+    }
+    color f_s(const vec3& wo, const vec3& wi) const override
+    {
+        double cos_theta_o = wo.z();
+        double cos_theta_i = wi.z();
+        bool reflect = cos_theta_o * cos_theta_i > 0; //theyre pointed in roughly same dir
+        double eta_rel = 1;
+        if (!reflect)
+        {
+            eta_rel = cos_theta_o > 0 ? eta_a/eta_b : eta_b/eta_a;
+        }
+        vec3 wm = eta_rel * wi + wo;
+        if (cos_theta_o == 0 || cos_theta_i == 0 || wm.length_squared() <= 1e-8) return color(0, 0, 0);
+        wm = unit_vector(wm);
+        if (wm.z() < 0) wm = -wm;
+
+        //if backfacing, discard, cant physically hit
+        if (dot(wm, wi) * cos_theta_i < 0 || dot(wm, wo) * cos_theta_o < 0) return color(0, 0, 0);
+
+        double reflectance = fresnel.evaluate(dot(wm, wo)).x();
+        if (reflect)
+        {
+            double f = mf_dist.D(wm) * reflectance * mf_dist.G(wo, wi);
+            f *= 1 / (4 * cos_theta_o * cos_theta_i);
+            return color(f, f, f);
+        }else
+        {
+            double denom = dot(wi, wm) + dot(wo, wm) / eta_rel;
+            denom = denom * denom * std::abs(cos_theta_i * cos_theta_o);
+            double f_t = mf_dist.D(wm) * (1 - reflectance) * mf_dist.G(wi, wo);
+            f_t *= std::abs(dot(wi, wm) * dot(wo, wm)) / denom;
+            f_t*=(eta_rel * eta_rel); //bc is transmission
+            return color(f_t, f_t, f_t);
+        }
+    }
+    double pdf(const vec3& wo, const vec3& wi) const override
+    {
+        double cos_theta_o = wo.z();
+        double cos_theta_i = wi.z();
+        bool reflect = cos_theta_o * cos_theta_i > 0; //theyre pointed in roughly same dir
+        double eta_rel = 1;
+        if (!reflect)
+        {
+            eta_rel = cos_theta_o > 0 ? eta_a/eta_b : eta_b/eta_a;
+        }
+        vec3 wm = eta_rel * wi + wo;
+        if (cos_theta_o == 0 || cos_theta_i == 0 || wm.length_squared() <= 1e-8) return 0.0;
+        wm = unit_vector(wm);
+        if (wm.z() < 0) wm = -wm;
+
+        //if backfacing, discard, cant physically hit
+        if (dot(wm, wi) * cos_theta_i < 0 || dot(wm, wo) * cos_theta_o < 0) return 0.0;
+
+        double reflectance = fresnel.evaluate(dot(wm, wo)).x();
+        if (reflect)
+        {
+            return mf_dist.pdf(wo, wm) / (4 * dot(wo, wm)) * reflectance; //reflectance = probability of reflecting
+        }else
+        {
+            double denom = (dot(wi, wm) + dot(wo, wm)/eta_rel);
+            denom = denom * denom;
+            double jacobian = std::abs(dot(wi, wm)) / denom;
+            return mf_dist.pdf(wo, wm) * jacobian * (1 - reflectance); //1-r = prob of transmission
+        }
+    }
+    //wo is a unit vector in render space alr, pointing away from shading point
+    bsdf_sample sample(const vec3& wo) override
+    {
+        vec3 wm = mf_dist.sample_wm(wo);
+        double reflectance = fresnel.evaluate(dot(wo, wm)).x(); //is dielectric so you know all channels r the same (probably)
+        vec3 wi;
+        color f;
+        double pdf;
+        if (random_double() < reflectance) //reflect
+        {
+            wi = reflect(wo, wm);
+            if (wi.z() < 0) //reflects under the surface
+            {
+                f = color(0, 0, 0);
+                pdf = 0;
+            } else
+            {
+                f = mf_dist.D(wm) * reflectance * mf_dist.G(wo, wi) * color(1, 1, 1);
+                f *= 1 / (4 * (wo.z()) * (wi.z()));
+                f = f * r_scale_factor;
+                pdf = mf_dist.pdf(wo, wm) / (4 * dot(wo, wm)) * reflectance;
+                flags = GlossyReflection;
+            }
+        }else //refract
+        {
+            double eta_rel = wo.z() > 0 ? eta_a/eta_b : eta_b/eta_a;
+            bool total_int_ref = !refract(wo, wm, eta_rel, wi); //failed to refract
+            bool same_hemi = wo.z() * wi.z() > 0;
+            if (same_hemi || wi.z() == 0 || total_int_ref) //invalid sample
+            {
+                return bsdf_sample(wi, color(0, 0, 0), 0, false);
+            }
+
+            //calculate f_t
+            double denom = dot(wi, wm) + dot(wo, wm) / eta_rel;
+            denom = denom * denom;
+
+            double f_t = mf_dist.D(wm) * (1 - reflectance) * mf_dist.G(wi, wo);
+            f_t *= std::abs(dot(wi, wm) * dot(wo, wm)) / (denom * std::abs(wi.z() * wo.z()));
+            f_t *= (eta_rel * eta_rel); //bc is transmission
+            f = color(f_t, f_t, f_t);
+
+            double dwm_dwi = std::abs(dot(wi, wm)) / denom;
+            pdf = mf_dist.pdf(wo, wm) * dwm_dwi * (1 - reflectance);
+            flags = GlossyTransmission;
+        }
+        //std::clog << "returning sample with f_s: " << f_s << " and pdf: " << pdf << std::endl;
+        return bsdf_sample(wi, f, pdf, false);
+    }
+private:
+    color r_scale_factor;
+    color t_scale_factor;
+    double eta_a, eta_b; //above = the side the surface normal is in, below = the other side
+    fresnel_dielectric fresnel;
+    const trowbridge_reitz_distribution& mf_dist;
 };
 
 class bsdf
