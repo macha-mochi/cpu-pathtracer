@@ -71,7 +71,7 @@ public:
         //transform p onto the squashed projected disk
         double h = std::sqrt(1 - p.x() * p.x());
         //we don't need to transform p.x, only p.y
-        double new_y = p.y() * (1 + cos_theta)/2 + h / 2 * (1 - cos_theta);
+        double new_y = p.y() * (1 + cos_theta)/2 + (1 - cos_theta) * h / 2;
         //(new_x, new_y) is a point on the "squashed" projected disk
         double new_z = std::sqrt(std::max(0.0, 1 - p.x() * p.x() - new_y * new_y));
         //(new_x, new_y, new_z) is a point lifted up to unit hemisphere, but guaranteed not to dip below macro surface

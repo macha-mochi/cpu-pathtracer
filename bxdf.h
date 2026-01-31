@@ -48,6 +48,29 @@ inline bool is_specular(bxdf_flags f)
 {
     return f & Specular;
 }
+inline std::string bxdf_flags_to_string(bxdf_flags flags)
+{
+    std::string s;
+    if (is_reflective(flags))
+    {
+        s+="Reflective";
+    }else if (is_transmission(flags))
+    {
+        s+="Transmission";
+    }
+    s+= " ";
+    if (is_diffuse(flags))
+    {
+        s+="Diffuse";
+    }else if (is_glossy(flags))
+    {
+        s+="Glossy";
+    }else if (is_specular(flags))
+    {
+        s+="Specular";
+    }
+    return s;
+}
 
 class bsdf_sample{
 public:
@@ -58,6 +81,9 @@ public:
     bsdf_sample() = default;
     bsdf_sample(const vec3& wi, const color& f, const double pdf, const bool is_delta) :
     wi(wi), f(f), pdf(pdf), is_delta(is_delta){};
+    bsdf_sample(const vec3& wi, const color& f, const double pdf, const bool is_delta, const bxdf_flags flags) :
+    wi(wi), f(f), pdf(pdf), is_delta(is_delta), sampled_bxdf_flags(flags){};
+    bxdf_flags sampled_bxdf_flags;
 };
 
 class bxdf
@@ -85,29 +111,6 @@ public:
     virtual bsdf_sample sample(const vec3& wo)
     {
         return bsdf_sample();
-    }
-    std::string flags_to_string()
-    {
-        std::string s;
-        if (is_reflective(flags))
-        {
-            s+="Reflective";
-        }else if (is_transmission(flags))
-        {
-            s+="Transmission";
-        }
-        s+= " ";
-        if (is_diffuse(flags))
-        {
-            s+="Diffuse";
-        }else if (is_glossy(flags))
-        {
-            s+="Glossy";
-        }else if (is_specular(flags))
-        {
-            s+="Specular";
-        }
-        return s;
     }
 };
 
@@ -378,7 +381,7 @@ public:
         double eta_rel = 1;
         if (!reflect)
         {
-            eta_rel = cos_theta_o > 0 ? eta_a/eta_b : eta_b/eta_a;
+            eta_rel = cos_theta_o > 0 ? eta_b/eta_a : eta_a/eta_b;
         }
         vec3 wm = eta_rel * wi + wo;
         if (cos_theta_o == 0 || cos_theta_i == 0 || wm.length_squared() <= 1e-8) return color(0, 0, 0);
@@ -398,8 +401,8 @@ public:
         {
             double denom = dot(wi, wm) + dot(wo, wm) / eta_rel;
             denom = denom * denom * std::abs(cos_theta_i * cos_theta_o);
-            double f_t = mf_dist.D(wm) * (1 - reflectance) * mf_dist.G(wi, wo);
-            f_t *= std::abs(dot(wi, wm) * dot(wo, wm)) / denom;
+            double f_t = mf_dist.D(wm) * (1 - reflectance) * mf_dist.G(wi, wo) *
+            std::abs(dot(wi, wm) * dot(wo, wm)) / denom;
             f_t*=(eta_rel * eta_rel); //bc is transmission
             return color(f_t, f_t, f_t);
         }
@@ -408,11 +411,11 @@ public:
     {
         double cos_theta_o = wo.z();
         double cos_theta_i = wi.z();
-        bool reflect = cos_theta_o * cos_theta_i > 0; //theyre pointed in roughly same dir
+        bool reflect = cos_theta_o * cos_theta_i > 0; //theyre in the same hemi
         double eta_rel = 1;
         if (!reflect)
         {
-            eta_rel = cos_theta_o > 0 ? eta_a/eta_b : eta_b/eta_a;
+            eta_rel = cos_theta_o > 0 ? eta_b/eta_a : eta_a/eta_b;
         }
         vec3 wm = eta_rel * wi + wo;
         if (cos_theta_o == 0 || cos_theta_i == 0 || wm.length_squared() <= 1e-8) return 0.0;
@@ -444,41 +447,45 @@ public:
         double pdf;
         if (random_double() < reflectance) //reflect
         {
+            flags = GlossyReflection;
+            std::clog << "attempt reflect" << std::endl;
             wi = reflect(wo, wm);
-            if (wi.z() < 0) //reflects under the surface
+            if (wi.z() * wo.z() < 0) //wi, wo not in the same hemisphere
             {
+                std::clog << "invalid sample bc we reflected but wi, wo not in same hemisphere, dot(wo, wm) = " << dot(wo, wm) << std::endl;
                 f = color(0, 0, 0);
-                pdf = 0;
+                pdf = 0.0;
             } else
             {
                 f = mf_dist.D(wm) * reflectance * mf_dist.G(wo, wi) * color(1, 1, 1);
                 f *= 1 / (4 * (wo.z()) * (wi.z()));
                 f = f * r_scale_factor;
                 pdf = mf_dist.pdf(wo, wm) / (4 * dot(wo, wm)) * reflectance;
-                flags = GlossyReflection;
             }
         }else //refract
         {
+            std::clog << "attempt refract" << std::endl;
+
+            flags = GlossyTransmission;
             double eta_rel = wo.z() > 0 ? eta_a/eta_b : eta_b/eta_a;
             bool total_int_ref = !refract(wo, wm, eta_rel, wi); //failed to refract
             bool same_hemi = wo.z() * wi.z() > 0;
             if (same_hemi || wi.z() == 0 || total_int_ref) //invalid sample
             {
+                std::clog << "invalid sample bc something failed with refraction" << std::endl;
                 return bsdf_sample(wi, color(0, 0, 0), 0, false);
             }
 
             //calculate f_t
             double denom = dot(wi, wm) + dot(wo, wm) / eta_rel;
             denom = denom * denom;
-
-            double f_t = mf_dist.D(wm) * (1 - reflectance) * mf_dist.G(wi, wo);
-            f_t *= std::abs(dot(wi, wm) * dot(wo, wm)) / (denom * std::abs(wi.z() * wo.z()));
-            f_t *= (eta_rel * eta_rel); //bc is transmission
-            f = color(f_t, f_t, f_t);
-
             double dwm_dwi = std::abs(dot(wi, wm)) / denom;
             pdf = mf_dist.pdf(wo, wm) * dwm_dwi * (1 - reflectance);
-            flags = GlossyTransmission;
+
+            double f_t = mf_dist.D(wm) * (1 - reflectance) * mf_dist.G(wi, wo) *
+            std::abs(dot(wi, wm) * dot(wo, wm)) / (denom * std::abs(wi.z() * wo.z()));
+            f_t *= (eta_rel * eta_rel); //bc is transmission
+            f = color(f_t, f_t, f_t);
         }
         //std::clog << "returning sample with f_s: " << f_s << " and pdf: " << pdf << std::endl;
         return bsdf_sample(wi, f, pdf, false);
@@ -540,7 +547,7 @@ public:
             return bsdf_sample(wi_world, sample_for_dir.f, sample_for_dir.pdf, true);
             //if it's a delta distribution don't add up any other bxdfs into f and pdf
         }
-        return bsdf_sample(wi_world, f_s_render(wo, wi), pdf_render(wo, wi), false);
+        return bsdf_sample(wi_world, f_s_render(wo, wi), pdf_render(wo, wi), false, b.flags);
     }
     vec3 local_to_render(const vec3& v_local) const
     {
@@ -557,7 +564,7 @@ public:
         std::string s;
         for (auto & bxdf : bxdfs)
         {
-            s+=bxdf->flags_to_string();
+            s+=bxdf_flags_to_string(bxdf->flags);
             s+="\n";
         }
         return s;

@@ -47,7 +47,7 @@ public:
         std::vector<color> image_buffer(image_width * image_height);
 
         int rows_done = 0;
-        #pragma omp parallel for schedule(dynamic)
+        //#pragma omp parallel for schedule(dynamic)
         for (int j = 0; j < image_height; j++) {
             std::clog << "\rScanlines remaining: " << image_height - rows_done << " " << std::flush;
             for (int i = 0; i < image_width; i++) {
@@ -159,6 +159,8 @@ private:
 
     color ray_color_iter(const ray& camera_ray, int depth, const hittable& world, const hittable_list& lights)
     {
+        std::clog << std::endl;
+
         std::string debug = "";
         color throughput = color(1, 1, 1);
         color outgoing_radiance = color(0, 0, 0);
@@ -170,8 +172,8 @@ private:
         double pdf_b;
         bool hit_specular = false;
 
-        bool glancing_metal = false;
-        bool first_hit_metal = false;
+        bool first_hit_glass = false;
+        double microfacet_cos = 0;
 
         for (int i = 0; i < depth; i++)
         {
@@ -198,7 +200,12 @@ private:
                     pb_light*=1.0/num_lights;
                     w_bsdf = power_heuristic(pb_bsdf, pb_light);
                 } //if didn't hit a light on the emitting side, w_bsdf stays at 1
-                if (f_s.length_squared() == 0 || pdf_b == 0) break; //no more contributions
+                if (f_s.length_squared() == 0 || pdf_b == 0)
+                {
+                    std::clog << "microfacet_cos: " << microfacet_cos << std::endl;
+                    debug+="f: " + f_s.to_string() + "pdf: " + std::to_string(pdf_b) + "\n";
+                    break;
+                }//no more contributions
                 throughput = throughput * w_bsdf * (f_s * cos_theta_i / pdf_b);
 
                 debug+= "CALCULATING THROUGHPUT: f: " + f_s.to_string() + " cos: " + std::to_string(cos_theta_i) + " pdf: " + std::to_string(pdf_b) + "\n";
@@ -226,11 +233,22 @@ private:
             vec3 wo = unit_vector(-r.direction());
             bsdf_sample b_sample = b.sample(wo);
             vec3 wi = b_sample.wi; //is in the same hemisphere as the normal
+            microfacet_cos = dot(unit_vector(wo + wi), wo);
             f_s = b_sample.f;
             cos_theta_i = std::abs(dot(wi, rec.normal)); //bc the cos(theta) just represents a ratio of areas
-            if (rec.mat->get_type() == Metallic && cos_theta_i < 0.15f) glancing_metal = true;
-            if (rec.mat->get_type() == Metallic && i == 0) first_hit_metal = true;
+            if (rec.mat->get_type() == Dielectric && i == 0)
+            {
+                first_hit_glass = true;
+                debug+= "wo: " + wo.to_string() + " wi: " + wi.to_string() + " same hemi: " + std::to_string(dot(wo, wi) > 0) + "\n";
+            }
             pdf_b = b_sample.pdf;
+            if (rec.mat->get_type() == Dielectric)
+            {
+                std::clog << bxdf_flags_to_string(b_sample.sampled_bxdf_flags) << std::endl;
+                bool same_hemi = dot(wi, rec.normal) * dot(wo, rec.normal) > 0;
+                std::clog << "same hemi: " << same_hemi << std::endl;
+                std::clog << "f: " << f_s.to_string() << " cos_i: " << cos_theta_i << " pdf: " << pdf_b << std::endl;
+            }
             r = ray(rec.p, wi);
             hit_specular = b_sample.is_delta;
 
@@ -263,7 +281,8 @@ private:
             debug+="NEE CONTRIBUTION: w_light = " + std::to_string(w_light) + " added: " + (throughput * w_light * direct_color).to_string() + "\n";
         }
         debug+="RETURNING FINAL COLOR: " + outgoing_radiance.to_string() + "\n";
-        if (first_hit_metal && glancing_metal)
+        std::clog << "FINAL COLOR: " << outgoing_radiance.to_string() << std::endl;
+        if (first_hit_glass)
         {
             //std::clog << debug << std::endl;
         }
