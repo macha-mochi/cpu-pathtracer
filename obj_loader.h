@@ -63,8 +63,11 @@ public:
 
         std::ifstream read_obj(path);
         std::clog << "reading: " << path << std::endl;
+        int numLinesRead = 0;
         while (getline(read_obj, line))
         {
+            std::clog << "\rRead " << numLinesRead << " lines" << std::flush;
+            numLinesRead++;
             auto tokens = tokenize(line, " ");
             const std::string& first_token = tokens[0];
             if (first_token == "v")
@@ -122,6 +125,7 @@ public:
                 }
             }
         }
+        std::clog << "Finished reading, creating mesh" << std::endl;
         shared_ptr<triangle_mesh> mesh = make_shared<triangle_mesh>(mesh_faces, global_v, global_vn, global_vt,
                                                                     mat);
         return mesh;

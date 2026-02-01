@@ -448,11 +448,9 @@ public:
         if (random_double() < reflectance) //reflect
         {
             flags = GlossyReflection;
-            std::clog << "attempt reflect" << std::endl;
             wi = reflect(wo, wm);
             if (wi.z() * wo.z() < 0) //wi, wo not in the same hemisphere
             {
-                std::clog << "invalid sample bc we reflected but wi, wo not in same hemisphere, dot(wo, wm) = " << dot(wo, wm) << std::endl;
                 f = color(0, 0, 0);
                 pdf = 0.0;
             } else
@@ -464,15 +462,12 @@ public:
             }
         }else //refract
         {
-            std::clog << "attempt refract" << std::endl;
-
             flags = GlossyTransmission;
             double eta_rel = wo.z() > 0 ? eta_a/eta_b : eta_b/eta_a;
             bool total_int_ref = !refract(wo, wm, eta_rel, wi); //failed to refract
             bool same_hemi = wo.z() * wi.z() > 0;
             if (same_hemi || wi.z() == 0 || total_int_ref) //invalid sample
             {
-                std::clog << "invalid sample bc something failed with refraction" << std::endl;
                 return bsdf_sample(wi, color(0, 0, 0), 0, false);
             }
 

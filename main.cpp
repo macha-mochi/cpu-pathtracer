@@ -153,7 +153,7 @@ void quads()
 
     cam.render(world);
 }
-void load_obj()
+void load_dragon()
 {
     hittable_list world;
 
@@ -161,27 +161,23 @@ void load_obj()
     /*auto mat = make_shared<lambertian>(color(1.0, 0.0, 0.0));
     world.add(make_shared<sphere>(point3(0, 2, 0), 1, mat));*/
 
-    auto mat1 = make_shared<lambertian>(color(1.0, 0.2, 0.5));
-    shared_ptr<triangle_mesh> mesh1 = loader.load("cube_and_sphere.obj", mat1);
+    auto mat1 = make_shared<lambertian>(color(0.2, 0.5, 0.7));
+    shared_ptr<triangle_mesh> mesh1 = loader.load("dragon.obj", mat1);
 
-    //world.add(mesh1);
+    auto bvh = make_shared<bvh_node>(mesh1->triangles);
 
-    aabb bb = mesh1->bounding_box();
-
-    hittable_list tris = mesh1->triangles;
-    world.add(make_shared<bvh_node>(tris));
 
     camera cam;
 
     cam.aspect_ratio      = 16.0 / 9.0;
-    cam.image_width       = 400;
-    cam.samples_per_pixel = 10;
-    cam.max_depth         = 30;
+    cam.image_width       = 512;
+    cam.samples_per_pixel = 8;
+    cam.max_depth         = 3;
     cam.background        = color(0.70, 0.80, 1.00);
 
-    cam.vfov     = 90;
-    cam.lookfrom = point3(-2,2,2);
-    cam.lookat   = point3(0,0,0);
+    cam.vfov     = 10;
+    cam.lookfrom = point3(0.5,0.07,-1);
+    cam.lookat   = point3(0,0.02,0);
     cam.vup      = vec3(0,1,0);
 
     cam.defocus_angle = 0.0;
@@ -189,7 +185,7 @@ void load_obj()
 
     cam.render(world);
 
-    std::clog << "triangles: " << tris.objects.size() << std::endl;
+    std::clog << "triangles: " << mesh1->triangles.objects.size() << std::endl;
 }
 void triangle_test(){
     hittable_list world;
@@ -252,9 +248,7 @@ void cornell_box() {
     auto red   = make_shared<lambertian>(color(.65, .05, .05));
     auto white = make_shared<lambertian>(color(.73, .73, .73));
     auto green = make_shared<lambertian>(color(.12, .45, .15));
-    auto light_mat = make_shared<diffuse_light>(10 * color(1.0, 0.9, 0.7), color(1.0, 1.0, 1.0));
-    auto metal_mat = make_shared<metal>(Metal::silver, color(1, 1, 1), 0.5, 0);
-    auto glass = make_shared<dielectric>(1.5, 0.4);
+    auto light_mat = make_shared<diffuse_light>(15 * color(1.0, 0.9, 0.7), color(1.0, 1.0, 1.0));
 
     world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
     world.add(make_shared<quad>(point3(0,0,0), vec3(0,555,0), vec3(0,0,555), red));
@@ -262,29 +256,23 @@ void cornell_box() {
     auto ql = make_shared<quad_light>(small_l, light_mat);
     world.add(ql);
     lights.add(ql);
-    //auto big_l = make_shared<quad>(point3(278+200, 554, 278+200), vec3(-400,0,0), vec3(0,0,-400), light_mat);
-    /*auto l1 = make_shared<quad>(point3(443, 554, 432), vec3(-80,0,0), vec3(0,0,-80), light_mat);
-    auto l2 = make_shared<quad>(point3(143, 554, 132), vec3(-80,0,0), vec3(0,0,-80), light_mat);
-    auto ql1 = make_shared<quad_light>(l1, light_mat);
-    auto ql2 = make_shared<quad_light>(l2, light_mat);
-    world.add(ql1);
-    world.add(ql2);
-    lights.add(ql1);
-    lights.add(ql2);*/
+
     world.add(make_shared<quad>(point3(0,0,0), vec3(555,0,0), vec3(0,0,555), white));
     world.add(make_shared<quad>(point3(555,555,555), vec3(-555,0,0), vec3(0,0,-555), white));
     world.add(make_shared<quad>(point3(0,0,555), vec3(555,0,0), vec3(0,555,0), white));
 
-    shared_ptr<hittable> bigger_box = box(point3(0,0,0), point3(165,330,165), white);
+    /*shared_ptr<hittable> bigger_box = box(point3(0,0,0), point3(165,330,165), white);
     bigger_box = make_shared<rotate_y>(bigger_box, -15);
     bigger_box = make_shared<translate>(bigger_box, vec3(130,0,265));
-    //world.add(bigger_box);
+    world.add(bigger_box);
 
     shared_ptr<hittable> smaller_box = box(point3(0,0,0), point3(165,165,165), white);
     smaller_box = make_shared<rotate_y>(smaller_box, 18);
     smaller_box = make_shared<translate>(smaller_box, vec3( 265,0,130));
-    //world.add(smaller_box);
+    world.add(smaller_box);*/
 
+    auto metal_mat = make_shared<metal>(Metal::silver, color(1, 1, 1), 0.5, 0);
+    auto glass = make_shared<dielectric>(1.5, 0.4);
     world.add(make_shared<sphere>(point3(200, 300, 300), 70, metal_mat));
     world.add(make_shared<sphere>(point3(400, 300, 300), 70, glass));
 
@@ -295,7 +283,7 @@ void cornell_box() {
     cam.aspect_ratio      = 1.0;
     cam.image_width       = 256;
     cam.samples_per_pixel = 8;
-    cam.max_depth         = 8;
+    cam.max_depth         = 16;
     cam.background = color(0, 0, 0);
 
     cam.vfov     = 40;
@@ -310,19 +298,110 @@ void cornell_box() {
     //std::cout << world.to_string() << std::endl;
     cam.render(world, lights);
 }
+void cornell_box_metals() {
+    hittable_list world;
+    hittable_list lights;
+
+    auto red   = make_shared<lambertian>(color(.65, .05, .05));
+    auto white = make_shared<lambertian>(color(.73, .73, .73));
+    auto green = make_shared<lambertian>(color(.12, .45, .15));
+    auto light_mat = make_shared<diffuse_light>(15 * color(1.0, 0.9, 0.7), color(1.0, 1.0, 1.0));
+
+    world.add(make_shared<quad>(point3(555,0,0), vec3(0,555,0), vec3(0,0,555), green));
+    world.add(make_shared<quad>(point3(0,0,0), vec3(0,555,0), vec3(0,0,555), red));
+    auto small_l = make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light_mat);
+    auto ql = make_shared<quad_light>(small_l, light_mat);
+    world.add(ql);
+    lights.add(ql);
+
+    world.add(make_shared<quad>(point3(0,0,0), vec3(555,0,0), vec3(0,0,555), white));
+    world.add(make_shared<quad>(point3(555,555,555), vec3(-555,0,0), vec3(0,0,-555), white));
+    world.add(make_shared<quad>(point3(0,0,555), vec3(555,0,0), vec3(0,555,0), white));
+
+    auto steel = make_shared<metal>(Metal::steel, color(1, 1, 1), 0, 0);
+    auto copper = make_shared<metal>(Metal::copper, color(1, 1, 1), 0, 0);
+    auto silver = make_shared<metal>(Metal::silver, color(1, 1, 1), 0, 0);
+    auto gold = make_shared<metal>(Metal::gold, color(1, 1, 1), 0, 0);
+
+    world.add(make_shared<sphere>(point3(100, 80, 400), 80, steel));
+    world.add(make_shared<sphere>(point3(200, 50, 150), 50, copper));
+    world.add(make_shared<sphere>(point3(310, 60, 220), 60, silver));
+    world.add(make_shared<sphere>(point3(410, 120, 400), 120, gold));
+
+    world = hittable_list(make_shared<bvh_node>(world));
+
+    camera cam;
+
+    cam.aspect_ratio      = 1.0;
+    cam.image_width       = 1024;
+    cam.samples_per_pixel = 1024;
+    cam.max_depth         = 16;
+    cam.background = color(0, 0, 0);
+
+    cam.vfov     = 40;
+    cam.lookfrom = point3(278, 278, -800);
+    cam.lookat   = point3(278, 278, 0);
+    cam.vup      = vec3(0,1,0);
+    cam.flipHorizontal = true;
+
+    cam.defocus_angle = 0;
+    cam.russian_roulette_termination = true;
+
+    //std::cout << world.to_string() << std::endl;
+    cam.render(world, lights);
+}
+void spider_lily_obj(){
+    hittable_list world;
+    hittable_list lights;
+
+    obj_loader loader = obj_loader("/Users/fayeyu/CLionProjects/raytracing/objs");
+    auto mat1 = make_shared<lambertian>(color(1.0, 0.2, 0.5));
+    shared_ptr<triangle_mesh> mesh1 = loader.load("fire.obj", mat1);
+    hittable_list tris = mesh1->triangles;
+    world.add(make_shared<translate>(make_shared<bvh_node>(tris), vec3(278, 278, 278)));
+
+    auto light_mat = make_shared<diffuse_light>(10 * color(1.0, 0.9, 0.7), color(1.0, 1.0, 1.0));
+    auto small_l = make_shared<quad>(point3(343, 554, 332), vec3(-130,0,0), vec3(0,0,-105), light_mat);
+    auto ql = make_shared<quad_light>(small_l, light_mat);
+    world.add(ql);
+    lights.add(ql);
+
+    camera cam;
+
+    cam.aspect_ratio      = 1.0;
+    cam.image_width       = 256;
+    cam.samples_per_pixel = 8;
+    cam.max_depth         = 8;
+    cam.background = color(0.3, 0.3, 0.6);
+
+    cam.vfov     = 40;
+    cam.lookfrom = point3(278, 278, -800);
+    cam.lookat   = point3(278, 278, 0);
+    cam.vup      = vec3(0,1,0);
+    cam.flipHorizontal = true;
+
+    cam.defocus_angle = 0;
+    cam.russian_roulette_termination = true;
+
+    cam.render(world, lights);
+
+    std::clog << "triangles: " << tris.objects.size() << std::endl;
+}
 // TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    switch (7)
+    switch (9)
     {
         case 1: make_big_scene(); break;
         case 2: make_small_test_scene(); break;
         case 3: quads(); break;
-        case 4: load_obj(); break;
-        case 5: triangle_test(); break;
-        case 6: simple_light(); break;
-        case 7: cornell_box();
+        case 4: triangle_test(); break;
+        case 5: simple_light(); break;
+        case 6: load_dragon(); break;
+        case 7: spider_lily_obj();
+        case 8: cornell_box(); break;
+        case 9: cornell_box_metals(); break;
     }
 
     auto end = std::chrono::high_resolution_clock::now();
