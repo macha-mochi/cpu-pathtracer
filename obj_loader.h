@@ -19,6 +19,7 @@ class obj_loader
 {
 public:
     std::vector<std::string> obj_filepaths;
+    vec3 mesh_scale_factor = vec3(1, 1, 1);
     obj_loader(const std::string& obj_folder_path)
     {
         //detect every .obj in the folder, store their (valid) paths in an array
@@ -76,7 +77,8 @@ public:
                 double x = std::stod(tokens[1]);
                 double y = std::stod(tokens[2]);
                 double z = std::stod(tokens[3]);
-                global_v.emplace_back(x, y, z);
+                point3 p(x, y, z);
+                global_v.emplace_back(mesh_scale_factor * p);
             }
             else if (first_token == "vt")
             {
@@ -84,6 +86,7 @@ public:
                 double x = std::stod(tokens[1]);
                 double y = std::stod(tokens[2]);
                 double z = 0;
+                //mesh scaling shouldnt impact the texture coords
                 global_vt.emplace_back(x, y, z);
             }
             else if (first_token == "vn")
@@ -92,6 +95,7 @@ public:
                 double x = std::stod(tokens[1]);
                 double y = std::stod(tokens[2]);
                 double z = std::stod(tokens[3]);
+                //mesh scaling also shouldnt impact the normal directions at each vertex
                 global_vn.emplace_back(x, y, z);
             }
             else if (first_token == "f")

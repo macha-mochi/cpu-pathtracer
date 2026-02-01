@@ -317,7 +317,7 @@ public:
         //std::clog << "f_temp: " << f << std::endl;
         f *= 1 / (4 * cos_theta_o * cos_theta_i);
         //std::clog << "f final: " << f << std::endl;
-        return f;
+        return albedo * f;
     }
     double pdf(const vec3& wo, const vec3& wi) const override
     {
@@ -396,7 +396,7 @@ public:
         {
             double f = mf_dist.D(wm) * reflectance * mf_dist.G(wo, wi);
             f *= 1 / (4 * cos_theta_o * cos_theta_i);
-            return color(f, f, f);
+            return r_scale_factor * color(f, f, f);
         }else
         {
             double denom = dot(wi, wm) + dot(wo, wm) / eta_rel;
@@ -404,7 +404,7 @@ public:
             double f_t = mf_dist.D(wm) * (1 - reflectance) * mf_dist.G(wi, wo) *
             std::abs(dot(wi, wm) * dot(wo, wm)) / denom;
             f_t*=(eta_rel * eta_rel); //bc is transmission
-            return color(f_t, f_t, f_t);
+            return t_scale_factor * color(f_t, f_t, f_t);
         }
     }
     double pdf(const vec3& wo, const vec3& wi) const override
@@ -480,7 +480,7 @@ public:
             double f_t = mf_dist.D(wm) * (1 - reflectance) * mf_dist.G(wi, wo) *
             std::abs(dot(wi, wm) * dot(wo, wm)) / (denom * std::abs(wi.z() * wo.z()));
             f_t *= (eta_rel * eta_rel); //bc is transmission
-            f = color(f_t, f_t, f_t);
+            f = t_scale_factor * color(f_t, f_t, f_t);
         }
         //std::clog << "returning sample with f_s: " << f_s << " and pdf: " << pdf << std::endl;
         return bsdf_sample(wi, f, pdf, false);
