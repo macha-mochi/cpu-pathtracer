@@ -84,6 +84,8 @@ build/raytracing > image.ppm
 
 The output image will be written to ```image.ppm``` (it will override any previous data that was there so be careful).
 
+This project is also multithreaded thanks to the OpenMP library so you will need to install that and possibly modify ```CMakeLists.txt``` to add it correctly.
+
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
