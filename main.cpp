@@ -357,32 +357,60 @@ void spider_lily_scene(){
     hittable_list world;
     hittable_list lights;
 
+    auto blue = make_shared<lambertian>(color(0.3, 0.3, 0.5));
+    auto red = make_shared<lambertian>(color(0.5, 0.3, 0.3));
+    auto green = make_shared<lambertian>(color(0.3, 0.5, 0.3));
+
     obj_loader loader = obj_loader("/Users/fayeyu/CLionProjects/raytracing/objs");
-    auto red_glass = make_shared<dielectric>(color(1, 1, 1), color(1, 0, 0), 1, 2.42, 0.2);
-    shared_ptr<triangle_mesh> mesh1 = loader.load("spiderlily.obj", red_glass);
-    world.add(make_shared<rotate_z>(
-        make_shared<rotate_y>(make_shared<bvh_node>(mesh1->triangles), 5), -20));
+    auto red_diamond = make_shared<dielectric>(color(1, 1, 1), color(1, 0, 0), 1, 2.42, 0.2);
+    shared_ptr<triangle_mesh> mesh1 = loader.load("spiderlily.obj", red_diamond);
+    shared_ptr<hittable> m1 = make_shared<bvh_node>(mesh1->triangles);
+    m1 = make_shared<rotate_y>(m1, 0);
+    m1 = make_shared<rotate_z>(m1, 12);
+    m1 = make_shared<translate>(m1, vec3(0.2, -0.08, 0));
+    world.add(m1);
 
-    auto dark_red_glass = make_shared<dielectric>(color(1, 1, 1), color(0.7, 0, 0), 1, 1.5, 0.3);
+    auto dark_red_glass = make_shared<dielectric>(color(1, 1, 1), color(0.8, 0, 0), 1, 1.5, 0.3);
+    loader.mesh_scale_factor = vec3(0.8, 0.8, 0.8);
     shared_ptr<triangle_mesh> mesh2 = loader.load("spiderlily.obj", dark_red_glass);
-    world.add(make_shared<translate>(
-        make_shared<rotate_z>(
-            make_shared<bvh_node>(mesh2->triangles), 37),
-            vec3(0.2, -0.15, 1)));
+    shared_ptr<hittable> m2 = make_shared<bvh_node>(mesh2->triangles);
+    m2 = make_shared<rotate_x>(m2, -15);
+    m2 = make_shared<rotate_y>(m2, -10);
+    m2 = make_shared<rotate_z>(m2, -23);
+    m2 = make_shared<translate>(m2, vec3(-0.63, -0.175, 0.5));
+    world.add(m2);
 
-    auto light_mat = make_shared<diffuse_light>(5 * color(1.0, 0.5, 0.5), color(1.0, 1.0, 1.0));
-    auto small_l = make_shared<quad>(point3(0.3, 1.5, 1), vec3(-2,0,0), vec3(0,0,-2), light_mat);
-    auto ql = make_shared<quad_light>(small_l, light_mat);
+    shared_ptr<triangle_mesh> mesh3 = loader.load("spiderlily.obj", dark_red_glass);
+    shared_ptr<hittable> m3 = make_shared<bvh_node>(mesh3->triangles);
+    m3 = make_shared<rotate_x>(m3, -10);
+    m3 = make_shared<rotate_y>(m3, 45);
+    m3 = make_shared<rotate_z>(m3, 30);
+    m3 = make_shared<translate>(m3, vec3(0.8, -0.35, 1));
+    world.add(m3);
+
+    auto main_light_mat = make_shared<diffuse_light>(5 * color(1.0, 0.5, 0.5), color(1.0, 1.0, 1.0));
+    //(1, 1.5, 1.5)
+    auto main_light_quad = make_shared<quad>(point3(2, 1.7, 2), vec3(-3,0,0), vec3(0,0,-3), main_light_mat);
+    auto ql = make_shared<quad_light>(main_light_quad, main_light_mat);
     world.add(ql);
     lights.add(ql);
 
+    auto rim_light_mat = make_shared<diffuse_light>(3 * color(1.0, 0.5, 0.5), color(1.0, 1.0, 1.0));
+    auto rl_quad = make_shared<quad>(point3(-1.2, -0.3, 0.8), vec3(0,0,-0.3), vec3(0,0.5,0), rim_light_mat);
+    auto rl = make_shared<quad_light>(rl_quad, rim_light_mat);
+    //world.add(rl);
+    //lights.add(rl);
+
+    world = hittable_list(make_shared<bvh_node>(world));
+
     camera cam;
 
+    /* 16 by 9 settings
     cam.aspect_ratio      = 16.0/9.0;
-    cam.image_width       = 1920;
-    cam.samples_per_pixel = 1024;
+    cam.image_width       = 256; //1920;
+    cam.samples_per_pixel = 32;
     cam.max_depth         = 16;
-    cam.background = color(0.01, 0.008, 0.006);
+    cam.background = color(0.005, 0.004, 0.003);
 
     cam.vfov     = 30;
     cam.lookfrom = point3(1.3, 0.20, -1); //0.29
@@ -392,6 +420,22 @@ void spider_lily_scene(){
 
     cam.defocus_angle = 2;
     cam.focus_dist = 1.5;
+    cam.russian_roulette_termination = true;*/
+
+    cam.aspect_ratio      = 2.39;
+    cam.image_width       = 1920;
+    cam.samples_per_pixel = 1024;
+    cam.max_depth         = 16;
+    cam.background = color(0.005, 0.004, 0.003);
+
+    cam.vfov     = 15;
+    cam.lookfrom = point3(0, 0.4, -2.5);
+    cam.lookat   = point3(0, 0, 0);
+    cam.vup      = vec3(0,1,0);
+    cam.flipHorizontal = true;
+
+    cam.defocus_angle = 2;
+    cam.focus_dist = 2.35;
     cam.russian_roulette_termination = true;
 
     cam.render(world, lights);
@@ -515,7 +559,7 @@ void cornell_box_lamps() {
 int main() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    switch (11)
+    switch (10)
     {
         case 1: make_big_scene(); break;
         case 2: make_small_test_scene(); break;

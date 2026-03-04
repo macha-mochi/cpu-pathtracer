@@ -4,7 +4,6 @@ project(raytracing)
 set(CMAKE_CXX_STANDARD 20)
 
 find_package(OpenMP REQUIRED)
-#set(OpenMP_ROOT "/opt/homebrew/opt/libomp")
 list(APPEND CMAKE_PREFIX_PATH "/opt/homebrew/opt/libomp")
 add_executable(raytracing main.cpp
         vec3.h
